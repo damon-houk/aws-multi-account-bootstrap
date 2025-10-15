@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -46,10 +45,12 @@ BILLING_ALERTS_SUMMARY.md
 # Build outputs
 dist/
 build/
+*.js
+!jest.config.js
 
-# Generated infrastructure
-infrastructure/
-src/
+# Generated TypeScript compiled files
+*.js.map
+*.d.ts
 
 # Credentials (should never be committed)
 *.pem

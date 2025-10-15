@@ -5,6 +5,12 @@
     },
     {
       "pattern": "^https://github.com/damon-houk"
+    },
+    {
+      "pattern": "^\\.?\\/?[^/]*\\.md$"
+    },
+    {
+      "pattern": "^docs/.*\\.md$"
     }
   ],
   "replacementPatterns": [
