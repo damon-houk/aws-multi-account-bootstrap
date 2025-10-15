@@ -1,0 +1,16 @@
+# Commit message template
+# Follow conventional commits format:
+# <type>: <subject>
+#
+# Types: feat, fix, docs, style, refactor, perf, test, chore, ci
+#
+# Body (optional):
+# - Explain what and why (not how)
+# - Use bullet points for multiple changes
+#
+# Footer (optional):
+# BREAKING CHANGE: description
+# Closes #123
+#
+# For AI-assisted commits, add tag at the end:
+# AI: Claude Code

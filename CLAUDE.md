@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Commit Message Convention
+
+When creating git commits in this repository, ALWAYS append the following tag at the end of commit messages:
+
+```
+AI: Claude Code
+```
+
+This tag helps track AI-assisted contributions for review and quality assurance purposes.
+
 ## Project Overview
 
 This is an AWS multi-account infrastructure bootstrap tool that automates the setup of a complete production-ready environment with GitHub CI/CD. It creates 3 AWS accounts (dev, staging, prod) in an AWS Organization, bootstraps AWS CDK, configures GitHub Actions with OIDC authentication, sets up semantic versioning, and implements billing alerts.
