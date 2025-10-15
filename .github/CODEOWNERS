@@ -1,0 +1,25 @@
+# CODEOWNERS file for aws-multi-account-bootstrap
+#
+# This file defines code ownership for automatic review requests
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @yourusername
+
+# Scripts - require review from infrastructure team
+/scripts/ @yourusername
+
+# GitHub workflows - require review from devops team
+/.github/workflows/ @yourusername
+
+# Documentation
+/docs/ @yourusername
+*.md @yourusername
+
+# Infrastructure templates
+/templates/ @yourusername
+
+# Core configuration files
+/Makefile @yourusername
+/.releaserc.json @yourusername
+/package.json @yourusername
