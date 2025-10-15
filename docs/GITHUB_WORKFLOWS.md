@@ -397,5 +397,4 @@ Planned improvements to workflows:
 If you have questions about the workflows:
 1. Check this documentation
 2. Review workflow run logs in GitHub Actions tab
-3. Open a [Discussion](https://github.com/damon-houk/aws-multi-account-bootstrap/discussions)
-4. File an [Issue](https://github.com/damon-houk/aws-multi-account-bootstrap/issues)
+3. File an [Issue](https://github.com/damon-houk/aws-multi-account-bootstrap/issues)
