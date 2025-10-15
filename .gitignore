@@ -46,10 +46,12 @@ BILLING_ALERTS_SUMMARY.md
 # Build outputs
 dist/
 build/
+*.js
+!jest.config.js
 
-# Generated infrastructure
-infrastructure/
-src/
+# Generated TypeScript compiled files
+*.js.map
+*.d.ts
 
 # Credentials (should never be committed)
 *.pem
