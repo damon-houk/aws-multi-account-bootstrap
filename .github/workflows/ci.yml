@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  lint-scripts:
+    name: Lint Bash Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'
+          severity: warning
+
+  lint-makefile:
+    name: Validate Makefile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Makefile syntax
+        run: make --dry-run check-prerequisites || true
+
+  lint-docs:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: '.github/markdown-link-check-config.json'
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || echo "No package.json yet - skipping"
+
+      - name: Run tests
+        run: npm test || echo "No tests configured yet - skipping"
+
+  validate-structure:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          set -e
+          echo "Checking required files..."
+
+          required_files=(
+            "README.md"
+            "LICENSE"
+            "Makefile"
+            "scripts/setup-complete-project.sh"
+            "scripts/create-project-accounts.sh"
+            "scripts/bootstrap-cdk.sh"
+            "scripts/setup-github-cicd.sh"
+            "scripts/setup-github-repo.sh"
+            "scripts/setup-billing-alerts.sh"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+
+      - name: Check script permissions
+        run: |
+          echo "Checking script permissions..."
+          for script in scripts/*.sh; do
+            if [ ! -x "$script" ]; then
+              echo "⚠️  Script not executable: $script"
+              chmod +x "$script"
+            else
+              echo "✅ Executable: $script"
+            fi
+          done

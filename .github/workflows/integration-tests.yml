@@ -1,0 +1,95 @@
+name: Integration Tests
+
+on:
+  # Manual trigger only (expensive tests)
+  workflow_dispatch:
+    inputs:
+      test_ou_id:
+        description: 'AWS OU ID for test accounts (will be cleaned up)'
+        required: true
+        type: string
+      email_prefix:
+        description: 'Email prefix for test accounts'
+        required: true
+        type: string
+
+  # Optional: Run on main branch pushes (if you want automatic integration testing)
+  # push:
+  #   branches: [main]
+
+jobs:
+  integration-test:
+    name: Setup and Teardown Test
+    runs-on: ubuntu-latest
+    # Require manual approval for integration tests (costs money)
+    environment: integration-testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Run Integration Test
+        id: integration-test
+        run: |
+          set -e
+
+          TEST_PROJECT_CODE="TST"
+          echo "Running integration test with PROJECT_CODE=$TEST_PROJECT_CODE"
+
+          # Create test accounts
+          echo "::group::Creating test accounts"
+          make create-accounts \
+            PROJECT_CODE=$TEST_PROJECT_CODE \
+            EMAIL_PREFIX=${{ inputs.email_prefix }} \
+            OU_ID=${{ inputs.test_ou_id }}
+          echo "::endgroup::"
+
+          # Bootstrap CDK
+          echo "::group::Bootstrapping CDK"
+          make bootstrap PROJECT_CODE=$TEST_PROJECT_CODE
+          echo "::endgroup::"
+
+          # Store account IDs for cleanup
+          DEV_ACCOUNT_ID=$(aws organizations list-accounts --query "Accounts[?Name=='${TEST_PROJECT_CODE}_DEV'].Id" --output text)
+          STAGING_ACCOUNT_ID=$(aws organizations list-accounts --query "Accounts[?Name=='${TEST_PROJECT_CODE}_STAGING'].Id" --output text)
+          PROD_ACCOUNT_ID=$(aws organizations list-accounts --query "Accounts[?Name=='${TEST_PROJECT_CODE}_PROD'].Id" --output text)
+
+          echo "test_dev_account=$DEV_ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "test_staging_account=$STAGING_ACCOUNT_ID" >> $GITHUB_OUTPUT
+          echo "test_prod_account=$PROD_ACCOUNT_ID" >> $GITHUB_OUTPUT
+
+          echo "✅ Integration test completed successfully"
+
+      - name: Cleanup Test Accounts
+        if: always()
+        run: |
+          echo "Cleaning up test accounts..."
+
+          # Close accounts (they'll be removed after 90 days)
+          for account_id in ${{ steps.integration-test.outputs.test_dev_account }} \
+                            ${{ steps.integration-test.outputs.test_staging_account }} \
+                            ${{ steps.integration-test.outputs.test_prod_account }}; do
+            if [ -n "$account_id" ]; then
+              echo "Closing account: $account_id"
+              aws organizations close-account --account-id "$account_id" || true
+            fi
+          done
+
+          echo "⚠️  Note: AWS keeps closed accounts for 90 days before permanent deletion"
