@@ -5,6 +5,19 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.1.0...v1.2.0) (2025-10-15)
+
+### Features
+
+* add CDK synth testing to CI workflow ([f51cb07](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/f51cb0785969dad8a1f5cac94ef2688d1cfba8e2))
+
+### Bug Fixes
+
+* add package-lock.json for CI workflow ([5c10285](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/5c10285bce81c0b0033caff47a61f8a4250e2ee9))
+* ignore relative markdown file links in link checker ([03518b0](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/03518b0c6abc06a7443766f4d01576cbb5df6145))
+* remove broken discussions link from documentation ([cee9964](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/cee996413c10a799cf22d0e17755771bf6c63d27))
+* resolve ShellCheck warnings in bash scripts ([c4b4e46](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/c4b4e463546aca6974dd4467a45744a05a968c97))
+
 ## [1.1.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.0.0...v1.1.0) (2025-10-15)
 
 ### Features
