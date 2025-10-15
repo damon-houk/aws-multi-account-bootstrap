@@ -190,9 +190,10 @@ for ENV in dev staging prod; do
     if [ "$ENV" = "prod" ]; then
         echo "  Adding reviewers to prod environment..."
         GITHUB_USER=$(gh api user --jq .login)
+        USER_ID=$(gh api users/$GITHUB_USER --jq .id)
         gh api repos/$GITHUB_ORG/$REPO_NAME/environments/prod \
             --method PUT \
-            --field reviewers[]='{"type":"User","id":'$(gh api users/$GITHUB_USER --jq .id)'}' \
+            --field reviewers[]='{"type":"User","id":'"$USER_ID"'}' \
             --field wait_timer=0 \
             2>/dev/null || echo "  Note: Environment protection may require GitHub Pro"
     fi

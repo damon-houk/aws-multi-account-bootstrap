@@ -100,3 +100,57 @@ jobs:
               echo "✅ Executable: $script"
             fi
           done
+
+  cdk-synth:
+    name: CDK Synth Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: CDK Synth (validate infrastructure)
+        run: |
+          echo "Running CDK synth to validate infrastructure..."
+          export ENV=dev
+          export PROJECT_CODE=TEST
+          export CDK_DEFAULT_ACCOUNT=123456789012
+          export CDK_DEFAULT_REGION=us-east-1
+
+          cdk synth --all --quiet
+
+          echo "✅ CDK synth completed successfully"
+          echo "This validates TypeScript compilation and CDK construct validity"
+
+      - name: Check generated CloudFormation templates
+        run: |
+          echo "Checking generated CloudFormation templates..."
+
+          if [ -d "cdk.out" ]; then
+            echo "✅ cdk.out directory created"
+
+            # List generated templates
+            echo "Generated templates:"
+            ls -lh cdk.out/*.template.json || true
+
+            # Validate at least one template exists
+            template_count=$(ls cdk.out/*.template.json 2>/dev/null | wc -l)
+            if [ "$template_count" -gt 0 ]; then
+              echo "✅ Generated $template_count CloudFormation template(s)"
+            else
+              echo "❌ No CloudFormation templates generated"
+              exit 1
+            fi
+          else
+            echo "❌ cdk.out directory not found"
+            exit 1
+          fi
