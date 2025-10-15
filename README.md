@@ -464,8 +464,8 @@ Built with:
 ## 💬 Support
 
 - 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/yourusername/aws-multi-account-bootstrap/issues)
-- 💡 [Discussions](https://github.com/yourusername/aws-multi-account-bootstrap/discussions)
+- 🐛 [Issue Tracker](https://github.com/damon-houk/aws-multi-account-bootstrap/issues)
+- 💡 [Discussions](https://github.com/damon-houk/aws-multi-account-bootstrap/discussions)
 - 📧 Email: your-email@example.com
 
 ---
