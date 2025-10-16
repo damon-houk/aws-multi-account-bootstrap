@@ -175,7 +175,7 @@ echo "Waiting 30 seconds for accounts to be fully created..."
 sleep 30
 
 if [ -f "$SCRIPT_DIR/bootstrap-cdk.sh" ]; then
-    "$SCRIPT_DIR/bootstrap-cdk.sh" "$PROJECT_CODE" "$EMAIL_PREFIX" "$OU_ID"
+    "$SCRIPT_DIR/bootstrap-cdk.sh" "$PROJECT_CODE"
 else
     echo -e "${YELLOW}bootstrap-cdk.sh not found, skipping CDK bootstrap${NC}"
 fi

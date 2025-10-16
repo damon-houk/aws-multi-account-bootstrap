@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to bootstrap AWS CDK in project accounts
-# Usage: ./bootstrap-cdk.sh TPA damon.o.houk ou-813y-xxxxxxxx
+# Usage: ./bootstrap-cdk.sh TPA
 
 set -e
 
@@ -13,35 +13,28 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Check arguments
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 1 ]; then
     echo -e "${RED}ERROR: Missing required arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <EMAIL_PREFIX> <OU_ID>"
+    echo "Usage: $0 <PROJECT_CODE>"
     echo ""
     echo "Example:"
-    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l"
+    echo "  $0 TPA"
     echo ""
     echo "Arguments:"
     echo "  PROJECT_CODE  - 3-letter project identifier (e.g., TPA)"
-    echo "  EMAIL_PREFIX  - Email without @gmail.com (e.g., damon.o.houk)"
-    echo "  OU_ID         - Organizational Unit ID (e.g., ou-813y-xxxxxxxx)"
+    echo ""
+    echo "Note: Reads account IDs from .aws-bootstrap/account-ids.json"
+    echo "      (created by create-project-accounts.sh)"
     echo ""
     exit 1
 fi
 
 PROJECT_CODE=$1
-EMAIL_PREFIX=$2
-OU_ID=$3
 
 # Validate PROJECT_CODE length
 if [ ${#PROJECT_CODE} -ne 3 ]; then
     echo -e "${RED}ERROR: PROJECT_CODE must be exactly 3 characters${NC}"
-    exit 1
-fi
-
-# Validate OU_ID format
-if [[ ! $OU_ID =~ ^ou- ]]; then
-    echo -e "${RED}ERROR: OU_ID must start with 'ou-'${NC}"
     exit 1
 fi
 
@@ -116,9 +109,12 @@ for ENV in dev staging prod; do
     fi
 
     # Export temporary credentials
-    export AWS_ACCESS_KEY_ID=$(echo "$CREDENTIALS" | jq -r '.Credentials.AccessKeyId')
-    export AWS_SECRET_ACCESS_KEY=$(echo "$CREDENTIALS" | jq -r '.Credentials.SecretAccessKey')
-    export AWS_SESSION_TOKEN=$(echo "$CREDENTIALS" | jq -r '.Credentials.SessionToken')
+    AWS_ACCESS_KEY_ID=$(echo "$CREDENTIALS" | jq -r '.Credentials.AccessKeyId')
+    AWS_SECRET_ACCESS_KEY=$(echo "$CREDENTIALS" | jq -r '.Credentials.SecretAccessKey')
+    AWS_SESSION_TOKEN=$(echo "$CREDENTIALS" | jq -r '.Credentials.SessionToken')
+    export AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY
+    export AWS_SESSION_TOKEN
 
     # Bootstrap CDK with trust to management account for cross-account deployments
     if cdk bootstrap aws://${ACCOUNT_ID}/us-east-1 \

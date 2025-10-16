@@ -75,9 +75,6 @@ fi
 echo -e "${YELLOW}Creating AWS Organization accounts...${NC}"
 echo ""
 
-# Get root ID for moving accounts later
-ROOT_ID=$(aws organizations list-roots --query 'Roots[0].Id' --output text)
-
 # Arrays to store account info
 declare -a ACCOUNT_IDS
 declare -a REQUEST_IDS
