@@ -1,21 +1,14 @@
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Testing
-coverage/
-*.lcov
-.nyc_output
-
-# Environment variables
-.env
-.env.local
-.env.*.local
+# CDK
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+cdk.out
+.cdk.staging
 
 # IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
@@ -24,36 +17,27 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# AWS
-.aws-sam/
-cdk.out/
-*.js.map
-*.d.ts
-!jest.config.js
-
-# Generated documentation (these are created by scripts)
-CICD_SETUP_SUMMARY.md
-GITHUB_SETUP_SUMMARY.md
-BILLING_ALERTS_SUMMARY.md
-
-# Temporary files
-*.tmp
-*.temp
+# Logs
 *.log
-.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build outputs
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
 dist/
 build/
-*.js
-!jest.config.js
+*.tsbuildinfo
 
-# Generated TypeScript compiled files
-*.js.map
-*.d.ts
+# Testing
+coverage/
+.nyc_output/
 
-# Credentials (should never be committed)
-*.pem
-*.key
-credentials.json
-config.json
+# Misc
+.cache/
+tmp/
+temp/

@@ -5,6 +5,9 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -23,14 +26,36 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
+# Parse arguments
+AUTO_CONFIRM=false
+
+# Check for -y or --yes flag
+for arg in "$@"; do
+    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
+        AUTO_CONFIRM=true
+    fi
+done
+
+# Remove -y/--yes from arguments
+ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" != "-y" && "$arg" != "--yes" ]]; then
+        ARGS+=("$arg")
+    fi
+done
+
 # Check arguments
-if [ "$#" -ne 5 ]; then
+if [ "${#ARGS[@]}" -ne 5 ]; then
     echo -e "${RED}ERROR: Missing required arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <EMAIL_PREFIX> <OU_ID> <GITHUB_ORG> <REPO_NAME>"
+    echo "Usage: $0 <PROJECT_CODE> <EMAIL_PREFIX> <OU_ID> <GITHUB_ORG> <REPO_NAME> [-y|--yes]"
     echo ""
     echo "Example:"
     echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app"
+    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app -y"
+    echo ""
+    echo "Options:"
+    echo "  -y, --yes    Skip confirmation prompt"
     echo ""
     echo "This script will:"
     echo "  1. Create 3 AWS accounts (dev, staging, prod)"
@@ -41,11 +66,11 @@ if [ "$#" -ne 5 ]; then
     exit 1
 fi
 
-PROJECT_CODE=$1
-EMAIL_PREFIX=$2
-OU_ID=$3
-GITHUB_ORG=$4
-REPO_NAME=$5
+PROJECT_CODE=${ARGS[0]}
+EMAIL_PREFIX=${ARGS[1]}
+OU_ID=${ARGS[2]}
+GITHUB_ORG=${ARGS[3]}
+REPO_NAME=${ARGS[4]}
 
 echo -e "${GREEN}Project Setup Configuration${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -115,11 +140,15 @@ CALLER_IDENTITY=$(aws sts get-caller-identity)
 echo -e "${GREEN}✓ Authenticated as: $(echo $CALLER_IDENTITY | jq -r '.Arn')${NC}"
 echo ""
 
-read -p "$(echo -e ${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC} )" -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 1
+if [ "$AUTO_CONFIRM" = false ]; then
+    read -p "$(echo -e ${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC} )" -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
+else
+    echo -e "${GREEN}Auto-confirming (--yes flag provided)${NC}"
 fi
 
 echo ""
@@ -128,8 +157,8 @@ echo -e "${CYAN}STEP 1/4: Creating AWS Accounts${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "./create-project-accounts.sh" ]; then
-    ./create-project-accounts.sh "$PROJECT_CODE" "$EMAIL_PREFIX" "$OU_ID"
+if [ -f "$SCRIPT_DIR/create-project-accounts.sh" ]; then
+    "$SCRIPT_DIR/create-project-accounts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX" "$OU_ID"
 else
     echo -e "${YELLOW}create-project-accounts.sh not found, skipping account creation${NC}"
     echo "Assuming accounts already exist..."
@@ -145,8 +174,8 @@ echo ""
 echo "Waiting 30 seconds for accounts to be fully created..."
 sleep 30
 
-if [ -f "./bootstrap-cdk.sh" ]; then
-    ./bootstrap-cdk.sh "$PROJECT_CODE"
+if [ -f "$SCRIPT_DIR/bootstrap-cdk.sh" ]; then
+    "$SCRIPT_DIR/bootstrap-cdk.sh" "$PROJECT_CODE" "$EMAIL_PREFIX" "$OU_ID"
 else
     echo -e "${YELLOW}bootstrap-cdk.sh not found, skipping CDK bootstrap${NC}"
 fi
@@ -157,8 +186,8 @@ echo -e "${CYAN}STEP 3/5: Setting up GitHub Actions CI/CD${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "./setup-github-cicd.sh" ]; then
-    ./setup-github-cicd.sh "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
+if [ -f "$SCRIPT_DIR/setup-github-cicd.sh" ]; then
+    "$SCRIPT_DIR/setup-github-cicd.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
 else
     echo -e "${YELLOW}setup-github-cicd.sh not found, skipping GitHub setup${NC}"
 fi
@@ -177,9 +206,10 @@ mkdir -p src/{frontend,backend,shared}
 mkdir -p docs
 
 # Create package.json
+PROJECT_CODE_LOWER=$(echo "$PROJECT_CODE" | tr '[:upper:]' '[:lower:]')
 cat > package.json <<PACKAGE_EOF
 {
-  "name": "${PROJECT_CODE,,}-app",
+  "name": "${PROJECT_CODE_LOWER}-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -311,7 +341,7 @@ cat > cdk.json <<CDK_EOF
     "@aws-cdk/aws-s3:keepNotificationInImportedBucket": false
   },
   "projectCode": "${PROJECT_CODE}",
-  "projectName": "${PROJECT_CODE,,}-app"
+  "projectName": "${PROJECT_CODE_LOWER}-app"
 }
 CDK_EOF
 
@@ -482,8 +512,8 @@ echo -e "${CYAN}STEP 5/6: Creating & Configuring GitHub Repository${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "./setup-github-repo.sh" ]; then
-    ./setup-github-repo.sh "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
+if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
+    "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
 else
     echo -e "${YELLOW}setup-github-repo.sh not found, skipping GitHub repo creation${NC}"
     echo "You'll need to create the repository manually and push"
@@ -495,8 +525,8 @@ echo -e "${CYAN}STEP 6/6: Setting Up Billing Alerts${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "./setup-billing-alerts.sh" ]; then
-    ./setup-billing-alerts.sh "$PROJECT_CODE" "$EMAIL_PREFIX@gmail.com"
+if [ -f "$SCRIPT_DIR/setup-billing-alerts.sh" ]; then
+    "$SCRIPT_DIR/setup-billing-alerts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX@gmail.com"
 else
     echo -e "${YELLOW}setup-billing-alerts.sh not found, skipping billing alerts${NC}"
     echo "You can set these up manually later"

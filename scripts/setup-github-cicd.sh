@@ -48,27 +48,21 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-# Get account IDs from CloudFormation outputs
-echo -e "${BLUE}Fetching account IDs from CloudFormation...${NC}"
+# Get account IDs from JSON file created by create-project-accounts.sh
+if [ ! -f ".aws-bootstrap/account-ids.json" ]; then
+    echo -e "${RED}ERROR: Account IDs file not found${NC}"
+    echo "Please run create-project-accounts.sh first"
+    exit 1
+fi
 
-STACK_NAME="${PROJECT_CODE}-Accounts"
-DEV_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='DevAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
+echo -e "${BLUE}Reading account IDs...${NC}"
 
-STAGING_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='StagingAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
-
-PROD_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='ProdAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
+DEV_ACCOUNT_ID=$(jq -r '.devAccountId' .aws-bootstrap/account-ids.json)
+STAGING_ACCOUNT_ID=$(jq -r '.stagingAccountId' .aws-bootstrap/account-ids.json)
+PROD_ACCOUNT_ID=$(jq -r '.prodAccountId' .aws-bootstrap/account-ids.json)
 
 if [ -z "$DEV_ACCOUNT_ID" ] || [ -z "$STAGING_ACCOUNT_ID" ] || [ -z "$PROD_ACCOUNT_ID" ]; then
-    echo -e "${RED}ERROR: Could not fetch account IDs from CloudFormation stack${NC}"
+    echo -e "${RED}ERROR: Could not read account IDs from file${NC}"
     echo "Make sure you've run the create-project-accounts.sh script first"
     exit 1
 fi
@@ -77,13 +71,6 @@ echo "  Dev Account:     $DEV_ACCOUNT_ID"
 echo "  Staging Account: $STAGING_ACCOUNT_ID"
 echo "  Prod Account:    $PROD_ACCOUNT_ID"
 echo ""
-
-read -p "Continue? (y/n) " -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 1
-fi
 
 # Create IAM OIDC provider and roles in each account
 echo -e "${BLUE}Creating IAM OIDC providers and roles...${NC}"
@@ -402,9 +389,10 @@ cat > CICD_SETUP_SUMMARY.md <<EOF
 
 1. **Bootstrap CDK in each account:**
    \`\`\`bash
-   aws cdk bootstrap aws://${DEV_ACCOUNT_ID}/us-east-1 --profile ${PROJECT_CODE,,}-dev
-   aws cdk bootstrap aws://${STAGING_ACCOUNT_ID}/us-east-1 --profile ${PROJECT_CODE,,}-staging
-   aws cdk bootstrap aws://${PROD_ACCOUNT_ID}/us-east-1 --profile ${PROJECT_CODE,,}-prod
+   PROJECT_CODE_LOWER=\$(echo "$PROJECT_CODE" | tr '[:upper:]' '[:lower:]')
+   aws cdk bootstrap aws://${DEV_ACCOUNT_ID}/us-east-1 --profile \${PROJECT_CODE_LOWER}-dev
+   aws cdk bootstrap aws://${STAGING_ACCOUNT_ID}/us-east-1 --profile \${PROJECT_CODE_LOWER}-staging
+   aws cdk bootstrap aws://${PROD_ACCOUNT_ID}/us-east-1 --profile \${PROJECT_CODE_LOWER}-prod
    \`\`\`
 
 2. **Set up GitHub repository:**
