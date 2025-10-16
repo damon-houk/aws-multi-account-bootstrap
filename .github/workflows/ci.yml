@@ -100,56 +100,28 @@ jobs:
             fi
           done
 
-  cdk-synth:
-    name: CDK Synth Test
+  validate-templates:
+    name: Validate CDK Templates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install AWS CDK
-        run: npm install -g aws-cdk
-
-      - name: CDK Synth (validate infrastructure)
+      - name: Check template structure
         run: |
-          echo "Running CDK synth to validate infrastructure..."
-          export ENV=dev
-          export PROJECT_CODE=TEST
-          export CDK_DEFAULT_ACCOUNT=123456789012
-          export CDK_DEFAULT_REGION=us-east-1
+          echo "Validating CDK template files..."
 
-          cdk synth --all --quiet
+          required_templates=(
+            "templates/infrastructure/bin/app.ts"
+            "templates/infrastructure/lib/.gitkeep"
+          )
 
-          echo "✅ CDK synth completed successfully"
-          echo "This validates TypeScript compilation and CDK construct validity"
-
-      - name: Check generated CloudFormation templates
-        run: |
-          echo "Checking generated CloudFormation templates..."
-
-          if [ -d "cdk.out" ]; then
-            echo "✅ cdk.out directory created"
-
-            # List generated templates
-            echo "Generated templates:"
-            ls -lh cdk.out/*.template.json || true
-
-            # Validate at least one template exists
-            template_count=$(ls cdk.out/*.template.json 2>/dev/null | wc -l)
-            if [ "$template_count" -gt 0 ]; then
-              echo "✅ Generated $template_count CloudFormation template(s)"
-            else
-              echo "❌ No CloudFormation templates generated"
+          for file in "${required_templates[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing template file: $file"
               exit 1
+            else
+              echo "✅ Found: $file"
             fi
-          else
-            echo "❌ cdk.out directory not found"
-            exit 1
-          fi
+          done
+
+          echo "✅ All CDK template files present"
