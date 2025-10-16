@@ -5,6 +5,17 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.2.0...v1.2.1) (2025-10-16)
+
+### Bug Fixes
+
+* Complete E2E testing and fix 6 critical bugs ([f8ba15e](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/f8ba15e0e0d5fcb1a2801ae96299b687680014f8))
+* Remove inappropriate CDK synth test from CI workflow ([3d42867](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/3d428670eb132ad2c54417aaa411bef1092067d0))
+
+### Documentation
+
+* add E2E test plan and session continuity guide ([7d3d904](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/7d3d9045f19de92276c827e36ec16c1c3cd0abe1))
+
 ## [1.2.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.1.0...v1.2.0) (2025-10-15)
 
 ### Features
