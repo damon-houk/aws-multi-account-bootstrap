@@ -43,7 +43,7 @@ In **one command**, this tool sets up:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -425,7 +425,7 @@ This tool implements AWS security best practices:
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### v1.0 (Current) ✅
 - [x] 3-account setup (dev, staging, prod)
@@ -472,7 +472,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for det
 
 ---
 
-## 🆚 Alternatives
+## Alternatives
 
 | Tool | Best For | Pros | Cons |
 |------|----------|------|------|
@@ -517,6 +517,6 @@ Built with:
 
 Made with ❤️ for developers who want to ship, not configure infrastructure.
 
-[Get Started](#-quick-start) • [Documentation](docs/) • [Contributing](CONTRIBUTING.md)
+[Get Started](#quick-start) • [Documentation](docs/) • [Contributing](CONTRIBUTING.md)
 
 </div>

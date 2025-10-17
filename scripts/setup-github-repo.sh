@@ -134,7 +134,7 @@ git push -u origin main
 echo "Configuring branch protection for main..."
 
 # Enable branch protection for main
-gh api repos/$GITHUB_ORG/$REPO_NAME/branches/main/protection \
+gh api "repos/$GITHUB_ORG/$REPO_NAME/branches/main/protection" \
     --method PUT \
     --field required_status_checks='{"strict":true,"contexts":["test"]}' \
     --field enforce_admins=false \
@@ -160,7 +160,7 @@ git push -u origin develop
 
 # Enable branch protection for develop
 echo "Configuring branch protection for develop..."
-gh api repos/$GITHUB_ORG/$REPO_NAME/branches/develop/protection \
+gh api "repos/$GITHUB_ORG/$REPO_NAME/branches/develop/protection" \
     --method PUT \
     --field required_status_checks='{"strict":true,"contexts":["test"]}' \
     --field enforce_admins=false \
@@ -184,7 +184,7 @@ for ENV in dev staging prod; do
     echo "Creating $ENV environment..."
 
     # Create environment
-    gh api repos/$GITHUB_ORG/$REPO_NAME/environments/$ENV \
+    gh api "repos/$GITHUB_ORG/$REPO_NAME/environments/$ENV" \
         --method PUT \
         --field wait_timer=0 \
         2>/dev/null || true
@@ -193,8 +193,8 @@ for ENV in dev staging prod; do
     if [ "$ENV" = "prod" ]; then
         echo "  Adding reviewers to prod environment..."
         GITHUB_USER=$(gh api user --jq .login)
-        USER_ID=$(gh api users/$GITHUB_USER --jq .id)
-        gh api repos/$GITHUB_ORG/$REPO_NAME/environments/prod \
+        USER_ID=$(gh api "users/$GITHUB_USER" --jq .id)
+        gh api "repos/$GITHUB_ORG/$REPO_NAME/environments/prod" \
             --method PUT \
             --field reviewers[]='{"type":"User","id":'"$USER_ID"'}' \
             --field wait_timer=0 \
