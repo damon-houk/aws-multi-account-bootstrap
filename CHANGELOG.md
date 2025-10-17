@@ -5,6 +5,21 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.2.1...v1.3.0) (2025-10-17)
+
+### Features
+
+* Organize generated files into output/ directory and restore docs folder ([b07e1ab](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/b07e1abac21802dc2149232097a57f0acbe75f1d))
+
+### Bug Fixes
+
+* Add bash 3.x compatibility to setup-billing-alerts.sh ([db60777](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/db60777c27003107701b809342ec5ba301ba354f))
+* Replace placeholder URLs with actual repository links ([094f523](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/094f523301aa170cf3c53b48e4a5dae8410dbec8))
+
+### Documentation
+
+* Update README cost breakdown to reflect actual baseline costs ([870c278](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/870c278e327fc5a388d3d97c2d850e929d506f2c))
+
 ## [1.2.1](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.2.0...v1.2.1) (2025-10-16)
 
 ### Bug Fixes
