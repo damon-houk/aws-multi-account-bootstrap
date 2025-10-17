@@ -523,7 +523,11 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
-    "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
+    if [ "$AUTO_CONFIRM" = true ]; then
+        "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR" --yes
+    else
+        "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
+    fi
 else
     echo -e "${YELLOW}setup-github-repo.sh not found, skipping GitHub repo creation${NC}"
     echo "You'll need to create the repository manually and push"
