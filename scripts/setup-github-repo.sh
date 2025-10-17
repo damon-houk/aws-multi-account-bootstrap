@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to create and configure GitHub repository with all best practices
-# Usage: ./setup-github-repo.sh TPA your-github-org therapy-practice-app [PROJECT_DIR]
+# Usage: ./setup-github-repo.sh TPA your-github-org therapy-practice-app [PROJECT_DIR] [-y|--yes]
 
 set -e
 
@@ -13,15 +13,39 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Parse arguments
+AUTO_CONFIRM=false
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -y|--yes)
+            AUTO_CONFIRM=true
+            shift
+            ;;
+        *)
+            POSITIONAL_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Restore positional parameters
+set -- "${POSITIONAL_ARGS[@]}"
+
 # Check arguments
 if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
     echo -e "${RED}ERROR: Invalid arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME> [PROJECT_DIR]"
+    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME> [PROJECT_DIR] [-y|--yes]"
     echo ""
     echo "Example:"
     echo "  $0 TPA myusername therapy-practice-app"
     echo "  $0 TPA myusername therapy-practice-app /path/to/project"
+    echo "  $0 TPA myusername therapy-practice-app . --yes"
+    echo ""
+    echo "Options:"
+    echo "  -y, --yes    Auto-confirm all prompts (non-interactive mode)"
     echo ""
     echo "If PROJECT_DIR is not provided, files are created in current directory"
     exit 1
@@ -75,18 +99,25 @@ echo ""
 # Ask for repository visibility
 echo -e "${BLUE}Repository Settings${NC}"
 echo ""
-read -p "Make repository private? [Y/n] " -n 1 -r
-echo ""
-VISIBILITY="--private"
-if [[ $REPLY =~ ^[Nn]$ ]]; then
-    VISIBILITY="--public"
-fi
 
-read -p "Continue with repository creation? [y/N] " -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
-    exit 1
+if [ "$AUTO_CONFIRM" = true ]; then
+    echo "Auto-confirming (--yes flag provided)"
+    VISIBILITY="--private"
+    echo "  Repository visibility: private"
+else
+    read -p "Make repository private? [Y/n] " -n 1 -r
+    echo ""
+    VISIBILITY="--private"
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        VISIBILITY="--public"
+    fi
+
+    read -p "Continue with repository creation? [y/N] " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 1
+    fi
 fi
 
 echo ""
