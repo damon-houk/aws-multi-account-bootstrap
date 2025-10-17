@@ -262,7 +262,27 @@ make setup-billing PROJECT_CODE=MYP EMAIL=you@example.com
 
 ## 📚 Documentation
 
-After setup completes, you'll have:
+### Generated Project Location
+
+All generated project files are created in the `output/{PROJECT_CODE}/` directory. For example, if your `PROJECT_CODE` is `MYP`, your project will be located at:
+
+```
+output/MYP/
+├── infrastructure/        # CDK infrastructure code
+├── src/                   # Application source code
+├── .github/workflows/     # CI/CD workflows
+├── CICD_SETUP_SUMMARY.md
+├── GITHUB_SETUP_SUMMARY.md
+├── BILLING_ALERTS_SUMMARY.md
+├── package.json
+└── ... other project files
+```
+
+This keeps the bootstrap tool repository clean and allows you to easily manage multiple projects.
+
+### Setup Summary Files
+
+After setup completes, you'll find these documentation files in your project directory (`output/{PROJECT_CODE}/`):
 
 - **CICD_SETUP_SUMMARY.md** - AWS account IDs and configuration
 - **GITHUB_SETUP_SUMMARY.md** - GitHub repository settings
@@ -271,9 +291,10 @@ After setup completes, you'll have:
 
 View any summary:
 ```bash
-make show-summary              # AWS accounts
-make show-github-summary       # GitHub config
-make show-billing-summary      # Billing alerts
+cd output/MYP              # Navigate to your project
+cat CICD_SETUP_SUMMARY.md  # View AWS configuration
+cat GITHUB_SETUP_SUMMARY.md     # View GitHub setup
+cat BILLING_ALERTS_SUMMARY.md   # View billing alerts
 ```
 
 ---

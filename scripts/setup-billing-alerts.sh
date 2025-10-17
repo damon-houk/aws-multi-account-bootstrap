@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to set up billing alerts and budgets for all project accounts
-# Usage: ./setup-billing-alerts.sh TPA your-email@example.com
+# Usage: ./setup-billing-alerts.sh TPA your-email@example.com [PROJECT_DIR]
 
 set -e
 
@@ -14,21 +14,24 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Check arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+if [ "$#" -lt 1 ] || [ "$#" -gt 3 ]; then
     echo -e "${RED}ERROR: Invalid arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> [EMAIL]"
+    echo "Usage: $0 <PROJECT_CODE> [EMAIL] [PROJECT_DIR]"
     echo ""
     echo "Example:"
     echo "  $0 TPA"
     echo "  $0 TPA your-email@example.com"
+    echo "  $0 TPA your-email@example.com /path/to/project"
     echo ""
     echo "If EMAIL is not provided, it will be fetched from AWS account"
+    echo "If PROJECT_DIR is not provided, files are created in current directory"
     exit 1
 fi
 
 PROJECT_CODE=$1
 EMAIL=${2:-""}
+PROJECT_DIR=${3:-"."}
 
 echo -e "${CYAN}"
 cat << "EOF"
@@ -355,7 +358,7 @@ for ENV in dev staging prod; do
 done
 
 # Create summary document
-cat > BILLING_ALERTS_SUMMARY.md <<EOF
+cat > "${PROJECT_DIR}/BILLING_ALERTS_SUMMARY.md" <<EOF
 # Billing Alerts Configuration Summary
 
 ## Overview
@@ -576,7 +579,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo -e "${YELLOW}IMPORTANT: Check your email (${EMAIL}) and confirm the SNS subscriptions!${NC}"
 echo ""
-echo "Summary written to: BILLING_ALERTS_SUMMARY.md"
+echo "Summary written to: ${PROJECT_DIR}/BILLING_ALERTS_SUMMARY.md"
 echo ""
 echo -e "${BLUE}Configuration:${NC}"
 echo "  • CloudWatch alarms created (alert at \$15)"
