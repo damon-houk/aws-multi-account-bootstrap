@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to create and configure GitHub repository with all best practices
-# Usage: ./setup-github-repo.sh TPA your-github-org therapy-practice-app
+# Usage: ./setup-github-repo.sh TPA your-github-org therapy-practice-app [PROJECT_DIR]
 
 set -e
 
@@ -14,20 +14,23 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Check arguments
-if [ "$#" -ne 3 ]; then
-    echo -e "${RED}ERROR: Missing required arguments${NC}"
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+    echo -e "${RED}ERROR: Invalid arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME>"
+    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME> [PROJECT_DIR]"
     echo ""
     echo "Example:"
     echo "  $0 TPA myusername therapy-practice-app"
+    echo "  $0 TPA myusername therapy-practice-app /path/to/project"
     echo ""
+    echo "If PROJECT_DIR is not provided, files are created in current directory"
     exit 1
 fi
 
 PROJECT_CODE=$1
 GITHUB_ORG=$2
 REPO_NAME=$3
+PROJECT_DIR=${4:-"."}
 
 echo -e "${CYAN}"
 cat << "EOF"
@@ -398,7 +401,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Create summary
-cat > GITHUB_SETUP_SUMMARY.md <<EOF
+cat > "${PROJECT_DIR}/GITHUB_SETUP_SUMMARY.md" <<EOF
 # GitHub Repository Setup Summary
 
 ## Repository
@@ -514,7 +517,7 @@ gh release create v1.0.0 --title "v1.0.0" --notes "Release notes"
 \`\`\`
 EOF
 
-echo "Summary written to: GITHUB_SETUP_SUMMARY.md"
+echo "Summary written to: ${PROJECT_DIR}/GITHUB_SETUP_SUMMARY.md"
 echo ""
 echo -e "${BLUE}Repository URL:${NC}"
 echo "  https://github.com/$GITHUB_ORG/$REPO_NAME"

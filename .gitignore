@@ -41,3 +41,6 @@ coverage/
 .cache/
 tmp/
 temp/
+
+# Generated Projects
+output/
