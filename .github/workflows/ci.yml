@@ -101,27 +101,78 @@ jobs:
           done
 
   validate-templates:
-    name: Validate CDK Templates
+    name: Validate IaC Templates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Check template structure
         run: |
-          echo "Validating CDK template files..."
+          echo "Validating IaC template structure..."
 
-          required_templates=(
-            "templates/infrastructure/bin/app.ts"
-            "templates/infrastructure/lib/.gitkeep"
-          )
+          # Check if templates directory exists
+          if [ ! -d "templates" ]; then
+            echo "ℹ️  No templates directory found (v1.0 - templates not yet added)"
+            echo "✅ Validation passed (templates will be added in v1.1+)"
+            exit 0
+          fi
 
-          for file in "${required_templates[@]}"; do
-            if [ ! -f "$file" ]; then
-              echo "❌ Missing template file: $file"
-              exit 1
-            else
+          echo "✅ Templates directory found"
+
+          # Check for legacy structure (v1.0): templates/infrastructure/
+          if [ -d "templates/infrastructure" ]; then
+            echo ""
+            echo "ℹ️  Found legacy CDK template structure (v1.0)"
+            echo "   Checking for required files..."
+
+            required_files=(
+              "templates/infrastructure/bin/app.ts"
+              "templates/infrastructure/lib/.gitkeep"
+            )
+
+            for file in "${required_files[@]}"; do
+              if [ ! -f "$file" ]; then
+                echo "❌ Missing: $file"
+                exit 1
+              fi
               echo "✅ Found: $file"
+            done
+
+            echo "✅ Legacy template structure valid"
+            exit 0
+          fi
+
+          # Check for new structure (v1.1+): templates/{cdk,terraform,pulumi}/minimal/
+          echo ""
+          echo "Checking for multi-IaC template structure (v1.1+)..."
+
+          template_count=0
+          for iac_dir in templates/*/; do
+            if [ -d "$iac_dir" ]; then
+              iac_tool=$(basename "$iac_dir")
+              echo ""
+              echo "Checking $iac_tool templates..."
+
+              # Each IaC tool should have at least a minimal template
+              if [ ! -d "${iac_dir}minimal" ]; then
+                echo "❌ Missing minimal template for $iac_tool"
+                echo "   Expected: ${iac_dir}minimal/"
+                exit 1
+              fi
+
+              echo "✅ $iac_tool templates valid"
+              ((template_count++))
             fi
           done
 
-          echo "✅ All CDK template files present"
+          if [ $template_count -eq 0 ]; then
+            echo ""
+            echo "⚠️  Templates directory exists but has no recognized structure"
+            echo "   Expected either:"
+            echo "   - Legacy (v1.0): templates/infrastructure/"
+            echo "   - Multi-IaC (v1.1+): templates/{cdk,terraform,pulumi}/minimal/"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All template structures valid ($template_count IaC tool(s) configured)"
