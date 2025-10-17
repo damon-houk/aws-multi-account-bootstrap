@@ -11,22 +11,22 @@ Become the de facto standard for bootstrapping AWS multi-account infrastructure 
 ## 📊 Release Timeline
 
 ```
-2025 Q1  ████████████████████  v1.0 - Launch          ✅ Current
-2025 Q2  ░░░░░░░░░░░░░░░░░░░░  v1.1 - Flexibility
-2025 Q3  ░░░░░░░░░░░░░░░░░░░░  v1.2 - Production Ready
+2025 Q1  ████████████████████  v1.0-1.2 - Launch      ✅ Complete
+2025 Q2  ██████████░░░░░░░░░░  v1.3-1.4 - Flexibility 🔄 Current
+2025 Q3  ░░░░░░░░░░░░░░░░░░░░  v1.5-1.6 - Production Ready
 2025 Q4  ░░░░░░░░░░░░░░░░░░░░  v2.0 - Enterprise
 2026     ░░░░░░░░░░░░░░░░░░░░  v3.0 - Platform
 ```
 
 ---
 
-## ✅ v1.0 - Launch (Q1 2025) - CURRENT
+## ✅ v1.0-1.2 - Launch & Stability (Q1 2025) - COMPLETED
 
-**Status:** 🟢 Completed
+**Status:** 🟢 Completed (Currently v1.2.1)
 
 **Goal:** Ship a working, opinionated solution that covers the 80% use case perfectly.
 
-### Features
+### Features (v1.0.0 - Oct 2025)
 - [x] **3-Account Setup** (dev, staging, prod)
 - [x] **AWS CDK Bootstrap** in all accounts
 - [x] **GitHub Repository Creation** with full configuration
@@ -40,6 +40,13 @@ Become the de facto standard for bootstrapping AWS multi-account infrastructure 
 - [x] **Comprehensive Documentation** (README, guides, summaries)
 - [x] **Makefile** with helper commands
 - [x] **Apache 2.0 License**
+
+### Improvements (v1.1.0 - v1.2.1)
+- [x] **Project Configuration** infrastructure (v1.1.0)
+- [x] **CI Testing** with ShellCheck, link validation (v1.2.0)
+- [x] **Local CI Checks** (`make ci-local`) (v1.3.0-dev)
+- [x] **Multi-IaC Template Validation** (v1.3.0-dev)
+- [x] **E2E Testing** framework and documentation (v1.2.1)
 
 ### Metrics for Success
 - 🎯 10 GitHub stars in first month
@@ -56,13 +63,26 @@ Become the de facto standard for bootstrapping AWS multi-account infrastructure 
 
 ---
 
-## 🔄 v1.1 - Flexibility (Q2 2025)
+## 🔄 v1.3-1.4 - Flexibility & Multi-IaC (Q2 2025)
 
-**Status:** 🟡 Planned
+**Status:** 🟡 In Progress (v1.3.0 ready for release)
 
-**Goal:** Give users choice without sacrificing simplicity.
+**Goal:** Give users choice without sacrificing simplicity. Support multiple IaC tools and account templates.
 
-### Features
+### Completed in v1.3.0
+- [x] **IaC Template Validation** - Flexible validation supporting legacy + future multi-IaC structures
+- [x] **Local CI Testing** - `make ci-local` runs all CI checks before pushing
+- [x] **Template Infrastructure** - `templates/` directory structure prepared for multiple IaC tools
+
+### Planned for v1.4.0
+
+#### Multi-IaC Support
+- [ ] **Terraform Templates** - Add Terraform option alongside CDK
+  ```bash
+  make setup-all IAC_TOOL=terraform
+  ```
+- [ ] **Pulumi Templates** - Community request dependent
+- [ ] **IaC Selection in Setup** - Choose IaC tool during project creation
 
 #### Account Structure Templates
 - [ ] **Minimal Template** (current 3-account setup) - Default
@@ -148,11 +168,11 @@ Become the de facto standard for bootstrapping AWS multi-account infrastructure 
 
 ---
 
-## 🏗️ v1.2 - Production Ready (Q3 2025)
+## 🏗️ v1.5-1.6 - Production Ready (Q3 2025)
 
 **Status:** 🔵 Planned
 
-**Goal:** Add production-grade features and infrastructure options.
+**Goal:** Add production-grade features, multi-region support, and pre-configured stack templates.
 
 ### Features
 
@@ -344,8 +364,8 @@ Vote on features at: https://github.com/damon-houk/aws-multi-account-bootstrap/d
 
 ### Project Health Indicators
 
-| Metric | v1.0 Target | v1.1 Target | v2.0 Target |
-|--------|-------------|-------------|-------------|
+| Metric | v1.0-1.2 Target | v1.3-1.4 Target | v2.0 Target |
+|--------|-----------------|-----------------|-------------|
 | GitHub Stars | 10 | 50 | 500 |
 | Contributors | 3 | 10 | 25 |
 | Forks | 5 | 25 | 100 |
@@ -356,8 +376,8 @@ Vote on features at: https://github.com/damon-houk/aws-multi-account-bootstrap/d
 
 ### User Satisfaction Targets
 
-- **Setup Success Rate:** >95% by v1.1
-- **Time to First Deploy:** <10 minutes by v1.2
+- **Setup Success Rate:** >95% by v1.3
+- **Time to First Deploy:** <10 minutes by v1.4
 - **Support Response Time:** <24 hours by v2.0
 - **Community NPS:** >50 by v2.0
 
@@ -365,18 +385,19 @@ Vote on features at: https://github.com/damon-houk/aws-multi-account-bootstrap/d
 
 ## 🤝 How to Contribute to the Roadmap
 
-### Current Phase: v1.0 Stability
+### Current Phase: v1.3 - Flexibility & Multi-IaC
 
 **Priority contributions:**
-1. 🐛 **Bug reports** - Especially for edge cases
+1. 🏗️ **Multi-IaC Templates** - Help build Terraform/Pulumi templates
 2. 📖 **Documentation improvements** - Clarity and examples
 3. 🧪 **Testing on different platforms** - macOS, Linux, WSL
 4. 💬 **Feedback on UX** - What's confusing? What's great?
+5. 🐛 **Bug reports** - Especially for edge cases
 
-### Upcoming Phase: v1.1 Planning
+### Upcoming Phase: v1.4 - Account Templates
 
 **We need your input on:**
-- Which template (minimal/standard/enterprise) would you use?
+- Which account template (minimal/standard/enterprise) would you use?
 - What CI/CD platform do you use (GitHub/GitLab/Bitbucket)?
 - What's your biggest pain point currently?
 - What would make you recommend this to a colleague?
@@ -397,24 +418,29 @@ Vote on features at: https://github.com/damon-houk/aws-multi-account-bootstrap/d
 
 ## 📅 Release Schedule
 
-### v1.0.x - Maintenance (Ongoing)
+### v1.0.x - v1.2.x - Maintenance (Ongoing)
 - Bug fixes released ASAP
 - Security patches within 24 hours
 - Documentation updates as needed
 
-### v1.1.0 - Target: May 2025
-- Feature freeze: April 15, 2025
-- Beta testing: April 15-30, 2025
-- Release: May 1, 2025
+### v1.3.0 - Target: April 2025
+- Feature freeze: March 30, 2025
+- Beta testing: March 30 - April 7, 2025
+- Release: April 8, 2025
 
-### v1.2.0 - Target: August 2025
-- Feature freeze: July 15, 2025
-- Beta testing: July 15-31, 2025
-- Release: August 1, 2025
+### v1.4.0 - Target: June 2025
+- Feature freeze: May 25, 2025
+- Beta testing: May 25 - June 5, 2025
+- Release: June 6, 2025
+
+### v1.5.0 - Target: August 2025
+- Feature freeze: July 25, 2025
+- Beta testing: July 25 - August 5, 2025
+- Release: August 6, 2025
 
 ### v2.0.0 - Target: November 2025
-- Feature freeze: October 15, 2025
-- Beta testing: October 15-31, 2025
+- Feature freeze: October 20, 2025
+- Beta testing: October 20-30, 2025
 - Release: November 1, 2025
 
 **Note:** Dates are aspirational and subject to community capacity.
@@ -449,16 +475,16 @@ Vote on features at: https://github.com/damon-houk/aws-multi-account-bootstrap/d
 A: Control Tower is great for enterprises but overkill (and expensive) for small teams. We target the 80% use case.
 
 **Q: Will you support Terraform instead of CDK?**
-A: Yes! Terraform bootstrap option planned for v1.2.
+A: Yes! Terraform templates planned for v1.4.
 
 **Q: Can I contribute?**
 A: Absolutely! See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 **Q: Is this production-ready?**
-A: v1.0 is production-ready for the features it includes. v1.2+ will add more production-grade features.
+A: v1.0-1.2 is production-ready for the features it includes. v1.5+ will add more production-grade features.
 
 **Q: What if I need more than 3 accounts now?**
-A: You can manually add accounts and run individual scripts. v1.1 will have templates.
+A: You can manually add accounts and run individual scripts. v1.4 will have account templates.
 
 **Q: Will this always be free?**
 A: The core tool will always be open-source. We may offer managed services or enterprise support in the future.
@@ -478,11 +504,15 @@ A: The core tool will always be open-source. We may offer managed services or en
 
 | Version | Date | Key Features |
 |---------|------|--------------|
-| v1.0.0 | Jan 2025 | Initial release - 3 accounts, GitHub CI/CD, billing alerts |
-| v1.1.0 | May 2025 | Templates, GitLab support, config files |
-| v1.2.0 | Aug 2025 | Multi-region, Terraform option, pre-configured stacks |
-| v2.0.0 | Nov 2025 | SCPs, compliance packs, Control Tower, monitoring |
-| v3.0.0 | 2026 | Platform features, multi-cloud, AI optimization |
+| v1.0.0 | Oct 15, 2025 | Initial release - 3 accounts, GitHub CI/CD, billing alerts |
+| v1.1.0 | Oct 15, 2025 | Project configuration, testing infrastructure, documentation |
+| v1.2.0 | Oct 15, 2025 | CDK synth testing, link validation, bug fixes |
+| v1.2.1 | Oct 16, 2025 | E2E testing framework, 6 critical bug fixes |
+| v1.3.0 | Apr 2025 (planned) | IaC template validation, local CI checks, multi-IaC infrastructure |
+| v1.4.0 | Jun 2025 (planned) | Terraform/Pulumi templates, account templates, YAML config |
+| v1.5.0 | Aug 2025 (planned) | Multi-region, pre-configured stacks, cost estimation |
+| v2.0.0 | Nov 2025 (planned) | SCPs, compliance packs, Control Tower, monitoring |
+| v3.0.0 | 2026 (planned) | Platform features, multi-cloud, AI optimization |
 
 ---
 
