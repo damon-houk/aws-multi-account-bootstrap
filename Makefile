@@ -244,6 +244,57 @@ validate-structure: ## Validate project structure
 	done
 	@echo "✓ Structure validation passed"
 
+.PHONY: validate-templates
+validate-templates: ## Validate IaC template structure
+	@echo "Validating IaC template structure..."
+	@if [ ! -d "templates" ]; then \
+		echo "ℹ️  No templates directory found (v1.0 - templates not yet added)"; \
+		echo "✅ Validation passed (templates will be added in v1.1+)"; \
+		exit 0; \
+	fi; \
+	echo "✅ Templates directory found"; \
+	if [ -d "templates/infrastructure" ]; then \
+		echo ""; \
+		echo "ℹ️  Found legacy CDK template structure (v1.0)"; \
+		echo "   Checking for required files..."; \
+		for file in templates/infrastructure/bin/app.ts templates/infrastructure/lib/.gitkeep; do \
+			if [ ! -f "$$file" ]; then \
+				echo "❌ Missing: $$file"; \
+				exit 1; \
+			fi; \
+			echo "✅ Found: $$file"; \
+		done; \
+		echo "✅ Legacy template structure valid"; \
+		exit 0; \
+	fi; \
+	echo ""; \
+	echo "Checking for multi-IaC template structure (v1.1+)..."; \
+	template_count=0; \
+	for iac_dir in templates/*/; do \
+		if [ -d "$$iac_dir" ]; then \
+			iac_tool=$$(basename "$$iac_dir"); \
+			echo ""; \
+			echo "Checking $$iac_tool templates..."; \
+			if [ ! -d "$${iac_dir}minimal" ]; then \
+				echo "❌ Missing minimal template for $$iac_tool"; \
+				echo "   Expected: $${iac_dir}minimal/"; \
+				exit 1; \
+			fi; \
+			echo "✅ $$iac_tool templates valid"; \
+			template_count=$$((template_count + 1)); \
+		fi; \
+	done; \
+	if [ $$template_count -eq 0 ]; then \
+		echo ""; \
+		echo "⚠️  Templates directory exists but has no recognized structure"; \
+		echo "   Expected either:"; \
+		echo "   - Legacy (v1.0): templates/infrastructure/"; \
+		echo "   - Multi-IaC (v1.1+): templates/{cdk,terraform,pulumi}/minimal/"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "✅ All template structures valid ($$template_count IaC tool(s) configured)"
+
 .PHONY: ci-local
 ci-local: ## Run all CI checks locally (before pushing)
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -258,6 +309,9 @@ ci-local: ## Run all CI checks locally (before pushing)
 	@echo ""
 	@echo "3️⃣  Validating project structure..."
 	@$(MAKE) validate-structure
+	@echo ""
+	@echo "4️⃣  Validating template structure..."
+	@$(MAKE) validate-templates
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  ✅ All CI checks passed!"
