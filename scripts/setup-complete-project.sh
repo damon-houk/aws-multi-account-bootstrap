@@ -505,6 +505,12 @@ GITKEEP_EOF
 echo -e "${GREEN}✓ Project structure created${NC}"
 echo ""
 
+# Install dependencies to generate package-lock.json
+echo "Installing dependencies..."
+npm install --silent
+echo -e "${GREEN}✓ Dependencies installed and package-lock.json generated${NC}"
+echo ""
+
 # Initialize git if not already initialized
 if [ ! -d ".git" ]; then
     echo "Initializing git repository..."
