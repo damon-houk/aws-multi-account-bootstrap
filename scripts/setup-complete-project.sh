@@ -141,11 +141,11 @@ if ! aws sts get-caller-identity &> /dev/null; then
 fi
 
 CALLER_IDENTITY=$(aws sts get-caller-identity)
-echo -e "${GREEN}✓ Authenticated as: $(echo $CALLER_IDENTITY | jq -r '.Arn')${NC}"
+echo -e "${GREEN}✓ Authenticated as: $(echo "$CALLER_IDENTITY" | jq -r '.Arn')${NC}"
 echo ""
 
 if [ "$AUTO_CONFIRM" = false ]; then
-    read -p "$(echo -e ${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC} )" -n 1 -r
+    read -p "$(echo -e "${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC}" )" -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Aborted."

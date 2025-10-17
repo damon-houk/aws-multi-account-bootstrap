@@ -98,12 +98,10 @@ for ENV in dev staging prod; do
     # Assume role into the target account
     ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/OrganizationAccountAccessRole"
 
-    CREDENTIALS=$(aws sts assume-role \
+    if ! CREDENTIALS=$(aws sts assume-role \
         --role-arn "${ROLE_ARN}" \
         --role-session-name "cdk-bootstrap-${ENV}" \
-        --output json)
-
-    if [ $? -ne 0 ]; then
+        --output json); then
         echo -e "${RED}✗ Failed to assume role in ${ENV} account${NC}"
         exit 1
     fi
@@ -117,10 +115,10 @@ for ENV in dev staging prod; do
     export AWS_SESSION_TOKEN
 
     # Bootstrap CDK with trust to management account for cross-account deployments
-    if cdk bootstrap aws://${ACCOUNT_ID}/us-east-1 \
+    if cdk bootstrap "aws://${ACCOUNT_ID}/us-east-1" \
         --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess \
-        --trust ${MGMT_ACCOUNT_ID} \
-        --trust-for-lookup ${MGMT_ACCOUNT_ID}; then
+        --trust "${MGMT_ACCOUNT_ID}" \
+        --trust-for-lookup "${MGMT_ACCOUNT_ID}"; then
         echo -e "${GREEN}✓ ${ENV} account bootstrapped${NC}"
     else
         echo -e "${RED}✗ Failed to bootstrap ${ENV} account${NC}"
