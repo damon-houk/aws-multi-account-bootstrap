@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to set up billing alerts and budgets for all project accounts
-# Usage: ./setup-billing-alerts.sh TPA your-email@example.com
+# Usage: ./setup-billing-alerts.sh TPA your-email@example.com [PROJECT_DIR]
 
 set -e
 
@@ -14,21 +14,24 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Check arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+if [ "$#" -lt 1 ] || [ "$#" -gt 3 ]; then
     echo -e "${RED}ERROR: Invalid arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> [EMAIL]"
+    echo "Usage: $0 <PROJECT_CODE> [EMAIL] [PROJECT_DIR]"
     echo ""
     echo "Example:"
     echo "  $0 TPA"
     echo "  $0 TPA your-email@example.com"
+    echo "  $0 TPA your-email@example.com /path/to/project"
     echo ""
     echo "If EMAIL is not provided, it will be fetched from AWS account"
+    echo "If PROJECT_DIR is not provided, files are created in current directory"
     exit 1
 fi
 
 PROJECT_CODE=$1
 EMAIL=${2:-""}
+PROJECT_DIR=${3:-"."}
 
 echo -e "${CYAN}"
 cat << "EOF"
@@ -75,20 +78,18 @@ echo "  Email:           $EMAIL"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Budget thresholds per environment
-declare -A ALERT_THRESHOLD
-declare -A BUDGET_LIMIT
-ALERT_THRESHOLD[dev]=15
-ALERT_THRESHOLD[staging]=15
-ALERT_THRESHOLD[prod]=15
-BUDGET_LIMIT[dev]=25
-BUDGET_LIMIT[staging]=25
-BUDGET_LIMIT[prod]=25
+# Budget thresholds per environment (bash 3.x compatible)
+ALERT_THRESHOLD_DEV=15
+ALERT_THRESHOLD_STAGING=15
+ALERT_THRESHOLD_PROD=15
+BUDGET_LIMIT_DEV=25
+BUDGET_LIMIT_STAGING=25
+BUDGET_LIMIT_PROD=25
 
 echo -e "${BLUE}Budget Configuration:${NC}"
-echo "  Dev:     Alert at \$${ALERT_THRESHOLD[dev]}, Budget limit \$${BUDGET_LIMIT[dev]}"
-echo "  Staging: Alert at \$${ALERT_THRESHOLD[staging]}, Budget limit \$${BUDGET_LIMIT[staging]}"
-echo "  Prod:    Alert at \$${ALERT_THRESHOLD[prod]}, Budget limit \$${BUDGET_LIMIT[prod]}"
+echo "  Dev:     Alert at \$${ALERT_THRESHOLD_DEV}, Budget limit \$${BUDGET_LIMIT_DEV}"
+echo "  Staging: Alert at \$${ALERT_THRESHOLD_STAGING}, Budget limit \$${BUDGET_LIMIT_STAGING}"
+echo "  Prod:    Alert at \$${ALERT_THRESHOLD_PROD}, Budget limit \$${BUDGET_LIMIT_PROD}"
 echo ""
 
 read -p "Continue with billing alert setup? [y/N] " -n 1 -r
@@ -98,35 +99,24 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Get account IDs from CloudFormation
+# Get account IDs from JSON file
 echo -e "${BLUE}Fetching account IDs...${NC}"
 
-STACK_NAME="${PROJECT_CODE}-Accounts"
-DEV_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='DevAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
-
-STAGING_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='StagingAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
-
-PROD_ACCOUNT_ID=$(aws cloudformation describe-stacks \
-    --stack-name "$STACK_NAME" \
-    --query "Stacks[0].Outputs[?OutputKey=='ProdAccountId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
-
-if [ -z "$DEV_ACCOUNT_ID" ] || [ -z "$STAGING_ACCOUNT_ID" ] || [ -z "$PROD_ACCOUNT_ID" ]; then
-    echo -e "${RED}ERROR: Could not fetch account IDs${NC}"
-    echo "Make sure you've created the accounts first"
+if [ ! -f ".aws-bootstrap/account-ids.json" ]; then
+    echo -e "${RED}ERROR: Account IDs file not found${NC}"
+    echo "Please run create-project-accounts.sh first"
     exit 1
 fi
 
-declare -A ACCOUNT_IDS
-ACCOUNT_IDS[dev]=$DEV_ACCOUNT_ID
-ACCOUNT_IDS[staging]=$STAGING_ACCOUNT_ID
-ACCOUNT_IDS[prod]=$PROD_ACCOUNT_ID
+DEV_ACCOUNT_ID=$(jq -r '.devAccountId' .aws-bootstrap/account-ids.json)
+STAGING_ACCOUNT_ID=$(jq -r '.stagingAccountId' .aws-bootstrap/account-ids.json)
+PROD_ACCOUNT_ID=$(jq -r '.prodAccountId' .aws-bootstrap/account-ids.json)
+
+if [ -z "$DEV_ACCOUNT_ID" ] || [ -z "$STAGING_ACCOUNT_ID" ] || [ -z "$PROD_ACCOUNT_ID" ]; then
+    echo -e "${RED}ERROR: Could not fetch account IDs from .aws-bootstrap/account-ids.json${NC}"
+    echo "Make sure you've created the accounts first"
+    exit 1
+fi
 
 echo "  Dev:     $DEV_ACCOUNT_ID"
 echo "  Staging: $STAGING_ACCOUNT_ID"
@@ -294,15 +284,43 @@ EOF
     rm -f /tmp/budget-${ENV}.json /tmp/notifications-${ENV}.json
 }
 
+# Helper function to get account ID for environment
+get_account_id() {
+    case $1 in
+        dev) echo "$DEV_ACCOUNT_ID" ;;
+        staging) echo "$STAGING_ACCOUNT_ID" ;;
+        prod) echo "$PROD_ACCOUNT_ID" ;;
+    esac
+}
+
+# Helper function to get alert threshold for environment
+get_alert_threshold() {
+    case $1 in
+        dev) echo "$ALERT_THRESHOLD_DEV" ;;
+        staging) echo "$ALERT_THRESHOLD_STAGING" ;;
+        prod) echo "$ALERT_THRESHOLD_PROD" ;;
+    esac
+}
+
+# Helper function to get budget limit for environment
+get_budget_limit() {
+    case $1 in
+        dev) echo "$BUDGET_LIMIT_DEV" ;;
+        staging) echo "$BUDGET_LIMIT_STAGING" ;;
+        prod) echo "$BUDGET_LIMIT_PROD" ;;
+    esac
+}
+
 # Setup billing alerts for each environment
 for ENV in dev staging prod; do
-    ACCOUNT_ID=${ACCOUNT_IDS[$ENV]}
-    ALERT_THRESH=${ALERT_THRESHOLD[$ENV]}
-    BUDGET_LIM=${BUDGET_LIMIT[$ENV]}
+    ACCOUNT_ID=$(get_account_id "$ENV")
+    ALERT_THRESH=$(get_alert_threshold "$ENV")
+    BUDGET_LIM=$(get_budget_limit "$ENV")
 
+    ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${CYAN}Setting up billing alerts for ${ENV^^} ($ACCOUNT_ID)${NC}"
+    echo -e "${CYAN}Setting up billing alerts for ${ENV_UPPER} ($ACCOUNT_ID)${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
@@ -315,12 +333,12 @@ for ENV in dev staging prod; do
         --role-session-name "billing-setup-${ENV}" \
         --output json)
 
-    export AWS_ACCESS_KEY_ID
-    export AWS_SECRET_ACCESS_KEY
-    export AWS_SESSION_TOKEN
     AWS_ACCESS_KEY_ID=$(echo "$CREDENTIALS" | jq -r '.Credentials.AccessKeyId')
     AWS_SECRET_ACCESS_KEY=$(echo "$CREDENTIALS" | jq -r '.Credentials.SecretAccessKey')
     AWS_SESSION_TOKEN=$(echo "$CREDENTIALS" | jq -r '.Credentials.SessionToken')
+    export AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY
+    export AWS_SESSION_TOKEN
 
     # Create SNS topic for alerts
     TOPIC_ARN=$(create_sns_topic "$ENV" "$ACCOUNT_ID")
@@ -340,7 +358,7 @@ for ENV in dev staging prod; do
 done
 
 # Create summary document
-cat > BILLING_ALERTS_SUMMARY.md <<EOF
+cat > "${PROJECT_DIR}/BILLING_ALERTS_SUMMARY.md" <<EOF
 # Billing Alerts Configuration Summary
 
 ## Overview
@@ -350,9 +368,9 @@ Billing alerts have been configured for all ${PROJECT_CODE} environments.
 
 | Environment | Alert Threshold | Budget Limit | Account ID |
 |-------------|----------------|--------------|------------|
-| Dev | \$${ALERT_THRESHOLD[dev]} | \$${BUDGET_LIMIT[dev]} | ${ACCOUNT_IDS[dev]} |
-| Staging | \$${ALERT_THRESHOLD[staging]} | \$${BUDGET_LIMIT[staging]} | ${ACCOUNT_IDS[staging]} |
-| Prod | \$${ALERT_THRESHOLD[prod]} | \$${BUDGET_LIMIT[prod]} | ${ACCOUNT_IDS[prod]} |
+| Dev | \$${ALERT_THRESHOLD_DEV} | \$${BUDGET_LIMIT_DEV} | ${DEV_ACCOUNT_ID} |
+| Staging | \$${ALERT_THRESHOLD_STAGING} | \$${BUDGET_LIMIT_STAGING} | ${STAGING_ACCOUNT_ID} |
+| Prod | \$${ALERT_THRESHOLD_PROD} | \$${BUDGET_LIMIT_PROD} | ${PROD_ACCOUNT_ID} |
 
 ## Alert Types
 
@@ -561,7 +579,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo -e "${YELLOW}IMPORTANT: Check your email (${EMAIL}) and confirm the SNS subscriptions!${NC}"
 echo ""
-echo "Summary written to: BILLING_ALERTS_SUMMARY.md"
+echo "Summary written to: ${PROJECT_DIR}/BILLING_ALERTS_SUMMARY.md"
 echo ""
 echo -e "${BLUE}Configuration:${NC}"
 echo "  • CloudWatch alarms created (alert at \$15)"

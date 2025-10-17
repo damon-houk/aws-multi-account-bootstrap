@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to set up GitHub Actions CI/CD with OIDC for AWS CDK deployments
-# Usage: ./setup-github-cicd.sh TPA <github-org> <repo-name>
+# Usage: ./setup-github-cicd.sh TPA <github-org> <repo-name> [PROJECT_DIR]
 
 set -e
 
@@ -13,20 +13,23 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Check arguments
-if [ "$#" -ne 3 ]; then
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
     echo -e "${RED}ERROR: Missing required arguments${NC}"
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME>"
+    echo "Usage: $0 <PROJECT_CODE> <GITHUB_ORG> <REPO_NAME> [PROJECT_DIR]"
     echo ""
     echo "Example:"
     echo "  $0 TPA your-github-username therapy-practice-app"
+    echo "  $0 TPA your-github-username therapy-practice-app /path/to/project"
     echo ""
+    echo "If PROJECT_DIR is not provided, files are created in current directory"
     exit 1
 fi
 
 PROJECT_CODE=$1
 GITHUB_ORG=$2
 REPO_NAME=$3
+PROJECT_DIR=${4:-"."}
 
 echo -e "${GREEN}Setting up GitHub Actions CI/CD for ${PROJECT_CODE}${NC}"
 echo ""
@@ -161,10 +164,10 @@ done
 # Create GitHub Actions workflow files
 echo -e "${BLUE}Creating GitHub Actions workflow files...${NC}"
 
-mkdir -p .github/workflows
+mkdir -p "${PROJECT_DIR}/.github/workflows"
 
 # Main CI/CD workflow
-cat > .github/workflows/deploy.yml <<EOF
+cat > "${PROJECT_DIR}/.github/workflows/deploy.yml" <<EOF
 name: Deploy CDK
 
 on:
@@ -317,7 +320,7 @@ jobs:
 EOF
 
 # Create PR validation workflow
-cat > .github/workflows/pr-validation.yml <<EOF
+cat > "${PROJECT_DIR}/.github/workflows/pr-validation.yml" <<EOF
 name: PR Validation
 
 on:
@@ -368,7 +371,7 @@ echo -e "${GREEN}✓ Workflow files created${NC}"
 echo ""
 
 # Create summary file
-cat > CICD_SETUP_SUMMARY.md <<EOF
+cat > "${PROJECT_DIR}/CICD_SETUP_SUMMARY.md" <<EOF
 # GitHub Actions CI/CD Setup Complete
 
 ## Account Configuration
@@ -462,7 +465,7 @@ EOF
 
 echo -e "${GREEN}✓ Setup complete!${NC}"
 echo ""
-echo "Summary written to: CICD_SETUP_SUMMARY.md"
+echo "Summary written to: ${PROJECT_DIR}/CICD_SETUP_SUMMARY.md"
 echo ""
 echo "Next steps:"
 echo "1. Bootstrap CDK in each account (see CICD_SETUP_SUMMARY.md)"

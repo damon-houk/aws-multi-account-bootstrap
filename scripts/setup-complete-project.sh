@@ -72,6 +72,9 @@ OU_ID=${ARGS[2]}
 GITHUB_ORG=${ARGS[3]}
 REPO_NAME=${ARGS[4]}
 
+# Define project output directory
+PROJECT_DIR="$SCRIPT_DIR/../output/$PROJECT_CODE"
+
 echo -e "${GREEN}Project Setup Configuration${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Project Code:    $PROJECT_CODE"
@@ -79,6 +82,7 @@ echo "  Email Prefix:    $EMAIL_PREFIX"
 echo "  OU ID:           $OU_ID"
 echo "  GitHub Org:      $GITHUB_ORG"
 echo "  Repository:      $REPO_NAME"
+echo "  Output Dir:      $PROJECT_DIR"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -187,7 +191,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-cicd.sh" ]; then
-    "$SCRIPT_DIR/setup-github-cicd.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
+    "$SCRIPT_DIR/setup-github-cicd.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
 else
     echo -e "${YELLOW}setup-github-cicd.sh not found, skipping GitHub setup${NC}"
 fi
@@ -199,7 +203,13 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Create basic project structure
-echo "Creating project directory structure..."
+echo "Creating project directory structure in $PROJECT_DIR..."
+
+# Create the output directory
+mkdir -p "$PROJECT_DIR"
+
+# Change to project directory for all file operations
+cd "$PROJECT_DIR"
 
 mkdir -p infrastructure/{lib,bin,test}
 mkdir -p src/{frontend,backend,shared}
@@ -513,7 +523,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
-    "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME"
+    "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
 else
     echo -e "${YELLOW}setup-github-repo.sh not found, skipping GitHub repo creation${NC}"
     echo "You'll need to create the repository manually and push"
@@ -526,7 +536,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-billing-alerts.sh" ]; then
-    "$SCRIPT_DIR/setup-billing-alerts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX@gmail.com"
+    "$SCRIPT_DIR/setup-billing-alerts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX@gmail.com" "$PROJECT_DIR"
 else
     echo -e "${YELLOW}setup-billing-alerts.sh not found, skipping billing alerts${NC}"
     echo "You can set these up manually later"
@@ -554,15 +564,18 @@ echo ""
 echo "1. ${YELLOW}IMPORTANT: Confirm SNS email subscriptions!${NC}"
 echo "   Check ${EMAIL_PREFIX}@gmail.com for confirmation emails"
 echo ""
-echo "2. Review the setup summaries:"
+echo "2. Navigate to your project directory:"
+echo "   ${CYAN}cd $PROJECT_DIR${NC}"
+echo ""
+echo "3. Review the setup summaries:"
 echo "   ${CYAN}cat CICD_SETUP_SUMMARY.md${NC}"
 echo "   ${CYAN}cat GITHUB_SETUP_SUMMARY.md${NC}"
 echo "   ${CYAN}cat BILLING_ALERTS_SUMMARY.md${NC}"
 echo ""
-echo "3. Install dependencies:"
+echo "4. Install dependencies:"
 echo "   ${CYAN}npm install${NC}"
 echo ""
-echo "4. Start building your infrastructure:"
+echo "5. Start building your infrastructure:"
 echo "   • Add CDK stacks to infrastructure/lib/"
 echo "   • Use semantic commits: ${CYAN}git commit -m \"feat: Add new feature\"${NC}"
 echo "   • Test locally: ${CYAN}npm run cdk synth${NC}"
@@ -575,10 +588,11 @@ echo "  • ${CYAN}feat!:${NC} Breaking change (major version bump)"
 echo ""
 echo -e "${YELLOW}Repository:${NC} https://github.com/${GITHUB_ORG}/${REPO_NAME}"
 echo ""
-echo -e "${BLUE}Generated Files:${NC}"
-echo "  • package.json           - Project dependencies"
-echo "  • cdk.json               - CDK configuration"
-echo "  • README.md              - Project documentation"
+echo -e "${BLUE}Project Directory:${NC} $PROJECT_DIR"
+echo ""
+echo -e "${BLUE}Generated Files Location:${NC}"
+echo "  All project files have been created in:"
+echo "  ${CYAN}$PROJECT_DIR${NC}"
 echo ""
 echo -e "${GREEN}Happy building! 🚀${NC}"
 echo ""
