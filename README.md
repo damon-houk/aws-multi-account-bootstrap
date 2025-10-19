@@ -2,8 +2,12 @@
 
 > 🚀 Bootstrap a complete AWS multi-account infrastructure with GitHub CI/CD in one command
 
+[![Version](https://img.shields.io/badge/version-v0.6.0--dev-orange.svg)](VERSIONING.md)
+[![Status](https://img.shields.io/badge/status-pre--release-yellow.svg)](VERSIONING.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+> ⚠️ **Pre-1.0 Notice**: This project is in active development. Breaking changes may occur between any v0.x releases. See [VERSIONING.md](VERSIONING.md) for details.
 
 **Stop spending days configuring AWS infrastructure. Start building your application.**
 
@@ -39,7 +43,7 @@ In **one command**, this tool sets up:
 **Not ideal for:**
 - Large enterprises needing 10+ accounts (but see our [roadmap](#roadmap))
 - Teams already using Terraform (check out [alternatives](#alternatives))
-- Projects that don't use GitHub (GitLab support coming in v1.1)
+- Projects that don't use GitHub (GitLab support coming soon)
 
 ---
 
@@ -442,33 +446,35 @@ This tool implements AWS security best practices:
 
 ## Roadmap
 
-### v1.0 (Current) ✅
+### Current (v0.6.0-dev)
 - [x] 3-account setup (dev, staging, prod)
 - [x] GitHub CI/CD with OIDC
 - [x] Semantic versioning
 - [x] Billing alerts
-- [x] Comprehensive documentation
+- [x] Mode-based configuration system
+- [x] YAML/JSON config file support
 
-### v1.1 (Next - Q2 2025)
-- [ ] Account structure templates (minimal/standard/enterprise)
-- [ ] YAML configuration file support
-- [ ] Interactive CLI mode
+### Next Releases (v0.x)
 - [ ] GitLab CI/CD support
+- [ ] Account structure templates (minimal/standard/enterprise)
+- [ ] Interactive setup wizard
+- [ ] Multi-region support
+- [ ] Pre-configured stack templates
 - [ ] Dry-run mode
 
-### v1.2 (Q3 2025)
-- [ ] Multi-region support
-- [ ] Terraform bootstrap option
-- [ ] Pre-configured stack templates
-- [ ] Cost estimation before deployment
-- [ ] Rollback capability
+### v1.0.0 (Future - When Stable)
+First stable release when:
+- Core features complete
+- CLI interface finalized
+- Production users successful
+- Comprehensive test coverage
 
-### v2.0 (Q4 2025)
+### v2.0.0 (Future - Major Enhancement)
 - [ ] Service Control Policies (SCPs)
 - [ ] AWS Control Tower integration
 - [ ] Compliance packs (HIPAA, SOC2, etc.)
 - [ ] SSO/Identity Center setup
-- [ ] Monitoring dashboards
+- [ ] Enterprise features
 
 [See full roadmap →](docs/ROADMAP.md)
 
