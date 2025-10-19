@@ -58,10 +58,14 @@ declare -A TOOL_INFO=(
     ["gh"]="GitHub CLI|gh --version|2.0.0|OIDC support"
     ["jq"]="jq|jq --version|1.6|Security fixes"
     ["cdk"]="AWS CDK|cdk --version|2.0.0|CDK v2 (requires Node.js)"
+    ["yq"]="yq|yq --version|4.0.0|YAML config file support (optional)"
 )
 
 # Dependency order matters!
 DEPENDENCY_ORDER=("git" "node" "aws" "gh" "jq" "cdk")
+
+# Optional dependencies (checked but not required)
+OPTIONAL_DEPS=("yq")
 
 # ============================================================================
 # Platform Detection
@@ -141,6 +145,9 @@ get_installed_version() {
             ;;
         cdk)
             cdk --version 2>/dev/null | awk '{print $1}'
+            ;;
+        yq)
+            yq --version 2>/dev/null | awk '{print $NF}'
             ;;
     esac
 }

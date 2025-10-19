@@ -1,12 +1,20 @@
 #!/bin/bash
 
 # Complete project setup script
-# Usage: ./setup-complete-project.sh TPA damon.o.houk ou-813y-xxxxxxxx github-org repo-name
+# Usage: ./setup-complete-project.sh [PROJECT_CODE] [EMAIL_PREFIX] [OU_ID] [GITHUB_ORG] [REPO_NAME]
+#
+# Configuration precedence:
+#   Interactive mode: CLI args > Config file > Prompts
+#   CI mode: CLI args > Environment variables > Config file > Error
 
 set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source config manager
+# shellcheck source=scripts/lib/config-manager.sh
+source "$SCRIPT_DIR/lib/config-manager.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,51 +34,117 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
-# Parse arguments
-AUTO_CONFIRM=false
+# Detect mode
+MODE=$(detect_mode)
 
-# Check for -y or --yes flag
-for arg in "$@"; do
-    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
-        AUTO_CONFIRM=true
-    fi
-done
+# Parse CLI arguments (optional)
+CLI_PROJECT_CODE=""
+CLI_EMAIL_PREFIX=""
+CLI_OU_ID=""
+CLI_GITHUB_ORG=""
+CLI_REPO_NAME=""
 
-# Remove -y/--yes from arguments
-ARGS=()
-for arg in "$@"; do
-    if [[ "$arg" != "-y" && "$arg" != "--yes" ]]; then
-        ARGS+=("$arg")
-    fi
-done
+# Parse positional arguments
+if [ "${#@}" -ge 1 ]; then CLI_PROJECT_CODE="$1"; fi
+if [ "${#@}" -ge 2 ]; then CLI_EMAIL_PREFIX="$2"; fi
+if [ "${#@}" -ge 3 ]; then CLI_OU_ID="$3"; fi
+if [ "${#@}" -ge 4 ]; then CLI_GITHUB_ORG="$4"; fi
+if [ "${#@}" -ge 5 ]; then CLI_REPO_NAME="$5"; fi
 
-# Check arguments
-if [ "${#ARGS[@]}" -ne 5 ]; then
-    echo -e "${RED}ERROR: Missing required arguments${NC}"
+# Show config file info if in interactive mode
+if [ "$MODE" = "interactive" ]; then
+    show_config_info
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <EMAIL_PREFIX> <OU_ID> <GITHUB_ORG> <REPO_NAME> [-y|--yes]"
-    echo ""
-    echo "Example:"
-    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app"
-    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app -y"
-    echo ""
-    echo "Options:"
-    echo "  -y, --yes    Skip confirmation prompt"
-    echo ""
-    echo "This script will:"
-    echo "  1. Create 3 AWS accounts (dev, staging, prod)"
-    echo "  2. Bootstrap CDK in all accounts"
-    echo "  3. Set up GitHub Actions CI/CD with OIDC"
-    echo "  4. Generate all necessary configuration files"
-    echo ""
-    exit 1
 fi
 
-PROJECT_CODE=${ARGS[0]}
-EMAIL_PREFIX=${ARGS[1]}
-OU_ID=${ARGS[2]}
-GITHUB_ORG=${ARGS[3]}
-REPO_NAME=${ARGS[4]}
+# Load configuration values using mode-based precedence
+PROJECT_CODE=$(get_config "PROJECT_CODE" "$CLI_PROJECT_CODE")
+EMAIL_PREFIX=$(get_config "EMAIL_PREFIX" "$CLI_EMAIL_PREFIX")
+OU_ID=$(get_config "OU_ID" "$CLI_OU_ID")
+GITHUB_ORG=$(get_config "GITHUB_ORG" "$CLI_GITHUB_ORG")
+REPO_NAME=$(get_config "REPO_NAME" "$CLI_REPO_NAME")
+
+# Handle missing values based on mode
+if [ "$MODE" = "ci" ]; then
+    # CI mode: Error if any value is missing
+    MISSING=()
+    [ -z "$PROJECT_CODE" ] && MISSING+=("PROJECT_CODE")
+    [ -z "$EMAIL_PREFIX" ] && MISSING+=("EMAIL_PREFIX")
+    [ -z "$OU_ID" ] && MISSING+=("OU_ID")
+    [ -z "$GITHUB_ORG" ] && MISSING+=("GITHUB_ORG")
+    [ -z "$REPO_NAME" ] && MISSING+=("REPO_NAME")
+
+    if [ ${#MISSING[@]} -gt 0 ]; then
+        echo -e "${RED}ERROR: Missing required configuration in CI mode${NC}"
+        echo ""
+        echo "Missing: ${MISSING[*]}"
+        echo ""
+        echo "Set via:"
+        echo "  • CLI arguments: $0 PROJECT_CODE EMAIL_PREFIX OU_ID GITHUB_ORG REPO_NAME"
+        echo "  • Environment variables: BOOTSTRAP_PROJECT_CODE, BOOTSTRAP_EMAIL_PREFIX, etc."
+        echo "  • Config file: .aws-bootstrap.yml or .aws-bootstrap.json"
+        echo ""
+        exit 1
+    fi
+else
+    # Interactive mode: Prompt for missing values
+    if [ -z "$PROJECT_CODE" ]; then
+        echo -e "${BLUE}Project Code${NC}"
+        echo "Enter a 3-letter code for your project (e.g., TPA for Therapy Practice App)"
+        while true; do
+            read -p "Project Code (3 uppercase letters): " PROJECT_CODE
+            if validate_project_code "$PROJECT_CODE"; then
+                break
+            else
+                echo -e "${RED}Invalid project code. Must be exactly 3 uppercase letters/numbers.${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$EMAIL_PREFIX" ]; then
+        echo -e "${BLUE}Email Address${NC}"
+        echo "Enter your Gmail address (we'll use + addressing for account emails)"
+        echo "Example: your.email@gmail.com"
+        while true; do
+            read -p "Email: " EMAIL_PREFIX
+            if validate_email_prefix "$EMAIL_PREFIX"; then
+                break
+            else
+                echo -e "${RED}Invalid email format.${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$OU_ID" ]; then
+        echo -e "${BLUE}Organization Unit ID${NC}"
+        echo "Enter the AWS Organization Unit ID where accounts should be created"
+        echo "Format: ou-xxxx-xxxxxxxx"
+        echo "Find this in AWS Organizations console"
+        while true; do
+            read -p "OU ID: " OU_ID
+            if validate_ou_id "$OU_ID"; then
+                break
+            else
+                echo -e "${RED}Invalid OU ID format. Must be: ou-xxxx-xxxxxxxx${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$GITHUB_ORG" ]; then
+        echo -e "${BLUE}GitHub Organization/Username${NC}"
+        read -p "GitHub Org: " GITHUB_ORG
+        echo ""
+    fi
+
+    if [ -z "$REPO_NAME" ]; then
+        echo -e "${BLUE}Repository Name${NC}"
+        read -p "Repo Name: " REPO_NAME
+        echo ""
+    fi
+fi
 
 # Define project output directory
 PROJECT_DIR="$SCRIPT_DIR/../output/$PROJECT_CODE"
@@ -115,8 +189,8 @@ if [ -f "$SCRIPT_DIR/lib/prerequisite-checker.sh" ]; then
         echo ""
     fi
 
-    if [ "$AUTO_CONFIRM" = true ]; then
-        # In non-interactive mode, use simple prerequisite checker
+    if [ "$MODE" = "ci" ]; then
+        # In CI mode, use simple prerequisite checker
         check_prerequisites_simple || {
             echo ""
             echo -e "${RED}Setup cannot continue without required dependencies${NC}"
@@ -206,9 +280,9 @@ echo ""
 
 # Check GitHub authentication
 if ! gh auth status &> /dev/null; then
-    if [ "$AUTO_CONFIRM" = true ]; then
+    if [ "$MODE" = "ci" ]; then
         echo -e "${RED}ERROR: Not authenticated with GitHub${NC}"
-        echo "Cannot run in non-interactive mode without GitHub authentication."
+        echo "Cannot run in CI mode without GitHub authentication."
         echo "Please run: gh auth login"
         exit 1
     else
@@ -225,7 +299,7 @@ GITHUB_USER=$(gh api user -q .login)
 echo -e "${GREEN}✓ Authenticated with GitHub as: ${GITHUB_USER}${NC}"
 echo ""
 
-if [ "$AUTO_CONFIRM" = false ]; then
+if [ "$MODE" = "interactive" ]; then
     read -p "$(echo -e "${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC}" )" -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -233,7 +307,7 @@ if [ "$AUTO_CONFIRM" = false ]; then
         exit 1
     fi
 else
-    echo -e "${GREEN}Auto-confirming (--yes flag provided)${NC}"
+    echo -e "${GREEN}Auto-confirming (CI mode)${NC}"
 fi
 
 echo ""
@@ -610,7 +684,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
-    if [ "$AUTO_CONFIRM" = true ]; then
+    if [ "$MODE" = "ci" ]; then
         "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR" --yes
     else
         "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
@@ -637,6 +711,22 @@ echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✓ Setup Complete!${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# Offer to save configuration in interactive mode
+if [ "$MODE" = "interactive" ]; then
+    declare -A CONFIG_DATA
+    CONFIG_DATA[PROJECT_CODE]="$PROJECT_CODE"
+    CONFIG_DATA[EMAIL_PREFIX]="$EMAIL_PREFIX"
+    CONFIG_DATA[OU_ID]="$OU_ID"
+    CONFIG_DATA[GITHUB_ORG]="$GITHUB_ORG"
+    CONFIG_DATA[REPO_NAME]="$REPO_NAME"
+
+    # Go back to bootstrap root directory for config file
+    cd "$SCRIPT_DIR/.."
+    save_config_prompt CONFIG_DATA
+fi
+
 echo ""
 echo -e "${BLUE}Summary:${NC}"
 echo "  • 3 AWS accounts created (dev, staging, prod)"

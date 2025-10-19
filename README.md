@@ -262,6 +262,21 @@ make setup-billing PROJECT_CODE=MYP EMAIL=you@example.com
 
 ## 📚 Documentation
 
+### Configuration Guide
+
+**New!** Flexible configuration system with support for:
+- YAML/JSON configuration files
+- Environment variables
+- Interactive prompts
+- CI/CD mode with auto-detection
+
+See [Configuration Guide](docs/CONFIGURATION.md) for complete details on:
+- Execution modes (interactive vs CI)
+- Configuration precedence rules
+- Config file formats (YAML/JSON)
+- Environment variable usage
+- Examples for teams and CI pipelines
+
 ### Generated Project Location
 
 All generated project files are created in the `output/{PROJECT_CODE}/` directory. For example, if your `PROJECT_CODE` is `MYP`, your project will be located at:
