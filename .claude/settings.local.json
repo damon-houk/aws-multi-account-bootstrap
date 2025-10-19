@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/damon/IdeaProjects/test-aws-bootstrap-e2e/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
