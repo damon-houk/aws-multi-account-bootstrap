@@ -5,6 +5,24 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.3.0...v1.4.0) (2025-10-19)
+
+### Features
+
+* Add flexible IaC template validation for multi-IaC support ([3e5a011](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/3e5a011e0cb73d219d04e9acefd0754d3658cebe))
+* Add make ci-local target to run CI checks before pushing ([85a6aef](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/85a6aefcaf685fe5a925d8ad124c9d6607f4c7f9))
+
+### Bug Fixes
+
+* Add GitHub CLI prerequisite checks to setup-complete-project.sh ([6abe788](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/6abe7882d0df10910dd87cd08a46da9317068642))
+* Add non-interactive mode and generate package-lock.json ([adbaca8](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/adbaca83065e051f93817a6aa665273c6466103c))
+* Add non-interactive mode to setup-github-repo.sh ([684dd38](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/684dd38d9da7079c9986c43742ff067b02d55f2a))
+* Fix ShellCheck warnings and remove emojis from anchor link headings ([3b4153a](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/3b4153aa0a61bc0f94b4faab67d89842833e4d51))
+
+### Documentation
+
+* Update roadmap to reflect actual version progress (v1.2.1) ([e7f7497](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/e7f749769b683033d30840beccb2702553e97e49))
+
 ## [1.3.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.2.1...v1.3.0) (2025-10-17)
 
 ### Features
