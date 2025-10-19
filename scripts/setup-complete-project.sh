@@ -126,6 +126,14 @@ else
     echo -e "${GREEN}✓ Git${NC}"
 fi
 
+if ! command -v gh &> /dev/null; then
+    echo -e "${RED}✗ GitHub CLI not installed${NC}"
+    echo -e "${YELLOW}   Install: brew install gh (macOS) | winget install GitHub.cli (Windows)${NC}"
+    MISSING_DEPS=1
+else
+    echo -e "${GREEN}✓ GitHub CLI${NC}"
+fi
+
 if [ $MISSING_DEPS -eq 1 ]; then
     echo ""
     echo -e "${RED}Please install missing dependencies before continuing${NC}"
@@ -142,6 +150,27 @@ fi
 
 CALLER_IDENTITY=$(aws sts get-caller-identity)
 echo -e "${GREEN}✓ Authenticated as: $(echo "$CALLER_IDENTITY" | jq -r '.Arn')${NC}"
+echo ""
+
+# Check GitHub authentication
+if ! gh auth status &> /dev/null; then
+    if [ "$AUTO_CONFIRM" = true ]; then
+        echo -e "${RED}ERROR: Not authenticated with GitHub${NC}"
+        echo "Cannot run in non-interactive mode without GitHub authentication."
+        echo "Please run: gh auth login"
+        exit 1
+    else
+        echo -e "${YELLOW}Not authenticated with GitHub${NC}"
+        echo "Authenticating with GitHub..."
+        gh auth login || {
+            echo -e "${RED}GitHub authentication failed${NC}"
+            exit 1
+        }
+    fi
+fi
+
+GITHUB_USER=$(gh api user -q .login)
+echo -e "${GREEN}✓ Authenticated with GitHub as: ${GITHUB_USER}${NC}"
 echo ""
 
 if [ "$AUTO_CONFIRM" = false ]; then
