@@ -175,18 +175,19 @@ get_node_quality_message() {
 # Check All Dependencies
 # ============================================================================
 
-check_all_dependencies() {
-    local -n missing_ref=$1
-    local -n installed_ref=$2
+# Global arrays to hold results
+MISSING_DEPS=()
+INSTALLED_DEPS=()
 
-    missing_ref=()
-    installed_ref=()
+check_all_dependencies() {
+    MISSING_DEPS=()
+    INSTALLED_DEPS=()
 
     for cmd in "${DEPENDENCY_ORDER[@]}"; do
         if [ "$(check_dependency "$cmd")" = "installed" ]; then
-            installed_ref+=("$cmd")
+            INSTALLED_DEPS+=("$cmd")
         else
-            missing_ref+=("$cmd")
+            MISSING_DEPS+=("$cmd")
         fi
     done
 }
@@ -196,8 +197,6 @@ check_all_dependencies() {
 # ============================================================================
 
 show_check_results() {
-    local -n missing_ref=$1
-    local -n installed_ref=$2
     local total=${#DEPENDENCY_ORDER[@]}
     local checked=0
 
@@ -257,7 +256,6 @@ show_check_results() {
 # ============================================================================
 
 show_quick_install() {
-    local -n missing_ref=$1
     local platform pkg_mgr
     platform=$(detect_platform)
     pkg_mgr=$(detect_package_manager)
@@ -286,7 +284,7 @@ show_quick_install() {
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             bold "# Install all missing dependencies"
             local brew_pkgs=()
-            for cmd in "${missing_ref[@]}"; do
+            for cmd in "${MISSING_DEPS[@]}"; do
                 case $cmd in
                     git) brew_pkgs+=("git") ;;
                     node) brew_pkgs+=("node") ;;
@@ -301,14 +299,14 @@ show_quick_install() {
                 echo "brew install ${brew_pkgs[*]}"
             fi
 
-            if [[ " ${missing_ref[*]} " =~ " aws " ]]; then
+            if [[ " ${MISSING_DEPS[*]} " =~ " aws " ]]; then
                 echo ""
                 echo "# AWS CLI (recommended method):"
                 echo "curl \"https://awscli.amazonaws.com/AWSCLIV2.pkg\" -o \"AWSCLIV2.pkg\""
                 echo "sudo installer -pkg AWSCLIV2.pkg -target /"
             fi
 
-            if [[ " ${missing_ref[*]} " =~ " cdk " ]]; then
+            if [[ " ${MISSING_DEPS[*]} " =~ " cdk " ]]; then
                 echo ""
                 echo "# AWS CDK (requires Node.js):"
                 if command -v node &> /dev/null; then
@@ -328,7 +326,7 @@ show_quick_install() {
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "sudo apt-get update"
 
-            for cmd in "${missing_ref[@]}"; do
+            for cmd in "${MISSING_DEPS[@]}"; do
                 case $cmd in
                     git)
                         echo "sudo apt-get install -y git"
@@ -376,7 +374,7 @@ show_quick_install() {
             close_box
             echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            for cmd in "${missing_ref[@]}"; do
+            for cmd in "${MISSING_DEPS[@]}"; do
                 case $cmd in
                     git) echo "sudo dnf install -y git" ;;
                     node)
@@ -408,7 +406,7 @@ show_quick_install() {
             close_box
             echo ""
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            for cmd in "${missing_ref[@]}"; do
+            for cmd in "${MISSING_DEPS[@]}"; do
                 case $cmd in
                     git) echo "winget install Git.Git" ;;
                     node) echo "winget install OpenJS.NodeJS.LTS" ;;
@@ -433,7 +431,7 @@ show_quick_install() {
             warning "No automatic package manager detected"
             echo ""
             info "Please install manually:"
-            for cmd in "${missing_ref[@]}"; do
+            for cmd in "${MISSING_DEPS[@]}"; do
                 IFS='|' read -r name _ _ _ <<< "${TOOL_INFO[$cmd]}"
                 case $cmd in
                     git) echo "  • Git: https://git-scm.com/downloads" ;;
@@ -454,7 +452,7 @@ show_quick_install() {
     fi
 
     # Re-check
-    verify_installation "${missing_ref[@]}"
+    verify_installation "${MISSING_DEPS[@]}"
 }
 
 # ============================================================================
@@ -462,8 +460,7 @@ show_quick_install() {
 # ============================================================================
 
 show_interactive_guide() {
-    local -n missing_ref=$1
-    local total=${#missing_ref[@]}
+    local total=${#MISSING_DEPS[@]}
     local current=0
 
     clear
@@ -474,7 +471,7 @@ show_interactive_guide() {
     info "You can skip any dependency and resume later"
     echo ""
 
-    for cmd in "${missing_ref[@]}"; do
+    for cmd in "${MISSING_DEPS[@]}"; do
         ((current++))
 
         clear
@@ -546,7 +543,7 @@ show_interactive_guide() {
     done
 
     # Final verification
-    verify_installation "${missing_ref[@]}"
+    verify_installation "${MISSING_DEPS[@]}"
 }
 
 show_single_dependency_guide() {
@@ -726,8 +723,6 @@ show_single_dependency_guide() {
 # ============================================================================
 
 show_manual_links() {
-    local -n missing_ref=$1
-
     clear
     section "Manual Installation"
     echo ""
@@ -735,7 +730,7 @@ show_manual_links() {
     info "Official documentation links for missing dependencies:"
     echo ""
 
-    for cmd in "${missing_ref[@]}"; do
+    for cmd in "${MISSING_DEPS[@]}"; do
         IFS='|' read -r name _ _ _ <<< "${TOOL_INFO[$cmd]}"
         bold "• $name"
         case $cmd in
@@ -753,7 +748,7 @@ show_manual_links() {
         return 1
     fi
 
-    verify_installation "${missing_ref[@]}"
+    verify_installation "${MISSING_DEPS[@]}"
 }
 
 # ============================================================================
@@ -818,8 +813,6 @@ verify_installation() {
 # ============================================================================
 
 check_prerequisites() {
-    local missing installed
-
     clear
 
     draw_box "AWS Multi-Account Bootstrap - Prerequisite Checker"
@@ -829,13 +822,13 @@ check_prerequisites() {
     close_box
 
     # Check all dependencies
-    check_all_dependencies missing installed
+    check_all_dependencies
 
     # Show results
-    show_check_results missing installed
+    show_check_results
 
     # If everything is installed, we're done!
-    if [ ${#missing[@]} -eq 0 ]; then
+    if [ ${#MISSING_DEPS[@]} -eq 0 ]; then
         draw_box "All Prerequisites Installed!"
         box_line ""
         box_line "✨ You're all set!"
@@ -855,7 +848,7 @@ check_prerequisites() {
 
     # Build missing list for display
     local missing_names=()
-    for cmd in "${missing[@]}"; do
+    for cmd in "${MISSING_DEPS[@]}"; do
         IFS='|' read -r name _ _ _ <<< "${TOOL_INFO[$cmd]}"
         missing_names+=("$name")
     done
@@ -886,15 +879,15 @@ check_prerequisites() {
         read -rp "Your choice [Q/I/M/E]: " choice
         case ${choice,,} in
             q)
-                show_quick_install missing
+                show_quick_install
                 return $?
                 ;;
             i)
-                show_interactive_guide missing
+                show_interactive_guide
                 return $?
                 ;;
             m)
-                show_manual_links missing
+                show_manual_links
                 return $?
                 ;;
             e)
