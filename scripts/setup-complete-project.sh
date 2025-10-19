@@ -116,68 +116,14 @@ if [ -f "$SCRIPT_DIR/lib/prerequisite-checker.sh" ]; then
     fi
 
     if [ "$AUTO_CONFIRM" = true ]; then
-        # In non-interactive mode, just check - don't offer to install
-        echo -e "${BLUE}Checking prerequisites...${NC}"
-
-        MISSING_DEPS=0
-
-        if ! command -v aws &> /dev/null; then
-            echo -e "${RED}✗ AWS CLI not installed${NC}"
-            MISSING_DEPS=1
-        else
-            echo -e "${GREEN}✓ AWS CLI${NC}"
-        fi
-
-        if ! command -v cdk &> /dev/null; then
-            echo -e "${RED}✗ AWS CDK not installed (npm install -g aws-cdk)${NC}"
-            MISSING_DEPS=1
-        else
-            echo -e "${GREEN}✓ AWS CDK${NC}"
-        fi
-
-        if ! command -v jq &> /dev/null; then
-            echo -e "${RED}✗ jq not installed${NC}"
-            MISSING_DEPS=1
-        else
-            echo -e "${GREEN}✓ jq${NC}"
-        fi
-
-        if ! command -v node &> /dev/null; then
-            echo -e "${RED}✗ Node.js not installed${NC}"
-            MISSING_DEPS=1
-        else
-            NODE_VERSION=$(node --version | sed 's/v//')
-            NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
-            if [ "$NODE_MAJOR" -lt 20 ]; then
-                echo -e "${YELLOW}⚠ Node.js ${NODE_VERSION} (requires ≥20.0.0)${NC}"
-                MISSING_DEPS=1
-            else
-                echo -e "${GREEN}✓ Node.js (v${NODE_VERSION})${NC}"
-            fi
-        fi
-
-        if ! command -v git &> /dev/null; then
-            echo -e "${RED}✗ Git not installed${NC}"
-            MISSING_DEPS=1
-        else
-            echo -e "${GREEN}✓ Git${NC}"
-        fi
-
-        if ! command -v gh &> /dev/null; then
-            echo -e "${RED}✗ GitHub CLI not installed${NC}"
-            MISSING_DEPS=1
-        else
-            echo -e "${GREEN}✓ GitHub CLI${NC}"
-        fi
-
-        if [ $MISSING_DEPS -eq 1 ]; then
+        # In non-interactive mode, use simple prerequisite checker
+        check_prerequisites_simple || {
             echo ""
-            echo -e "${RED}Please install missing dependencies before continuing${NC}"
-            echo -e "${YELLOW}Hint: Run without -y flag for interactive installation wizard${NC}"
+            echo -e "${RED}Setup cannot continue without required dependencies${NC}"
             exit 1
-        fi
+        }
     else
-        # In interactive mode, use the prerequisite checker
+        # In interactive mode, use the full prerequisite checker
         check_prerequisites || {
             echo ""
             echo -e "${RED}Setup cannot continue without required dependencies${NC}"
@@ -188,38 +134,38 @@ else
     # Fallback if prerequisite-checker.sh not found
     echo -e "${BLUE}Checking prerequisites...${NC}"
 
-    MISSING_DEPS=0
+    MISSING_COUNT=0
 
     if ! command -v aws &> /dev/null; then
         echo -e "${RED}✗ AWS CLI not installed${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         echo -e "${GREEN}✓ AWS CLI${NC}"
     fi
 
     if ! command -v cdk &> /dev/null; then
         echo -e "${RED}✗ AWS CDK not installed (npm install -g aws-cdk)${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         echo -e "${GREEN}✓ AWS CDK${NC}"
     fi
 
     if ! command -v jq &> /dev/null; then
         echo -e "${RED}✗ jq not installed${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         echo -e "${GREEN}✓ jq${NC}"
     fi
 
     if ! command -v node &> /dev/null; then
         echo -e "${RED}✗ Node.js not installed${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         NODE_VERSION=$(node --version | sed 's/v//')
         NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
         if [ "$NODE_MAJOR" -lt 20 ]; then
             echo -e "${YELLOW}⚠ Node.js ${NODE_VERSION} (requires ≥20.0.0)${NC}"
-            MISSING_DEPS=1
+            MISSING_COUNT=1
         else
             echo -e "${GREEN}✓ Node.js (v${NODE_VERSION})${NC}"
         fi
@@ -227,19 +173,19 @@ else
 
     if ! command -v git &> /dev/null; then
         echo -e "${RED}✗ Git not installed${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         echo -e "${GREEN}✓ Git${NC}"
     fi
 
     if ! command -v gh &> /dev/null; then
         echo -e "${RED}✗ GitHub CLI not installed${NC}"
-        MISSING_DEPS=1
+        MISSING_COUNT=1
     else
         echo -e "${GREEN}✓ GitHub CLI${NC}"
     fi
 
-    if [ $MISSING_DEPS -eq 1 ]; then
+    if [ $MISSING_COUNT -eq 1 ]; then
         echo ""
         echo -e "${RED}Please install missing dependencies before continuing${NC}"
         exit 1

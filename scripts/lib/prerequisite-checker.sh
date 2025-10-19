@@ -812,6 +812,61 @@ verify_installation() {
 # Main Flow
 # ============================================================================
 
+check_prerequisites_simple() {
+    # Simple non-interactive prerequisite check
+    # Just checks and fails fast if anything is missing
+
+    echo "Checking prerequisites..."
+
+    check_all_dependencies
+
+    # Display results simply
+    for cmd in "${DEPENDENCY_ORDER[@]}"; do
+        IFS='|' read -r name _ min_ver _ <<< "${TOOL_INFO[$cmd]}"
+
+        if [ "$(check_dependency "$cmd")" = "installed" ]; then
+            local version
+            version=$(get_installed_version "$cmd")
+
+            # Special version check for Node.js
+            if [ "$cmd" = "node" ]; then
+                local major=${version%%.*}
+                major=${major#v}
+                if [ "$major" -lt 20 ]; then
+                    error "✗ $name"
+                    info "  Version: $version (requires ≥20.0.0)"
+                    MISSING_DEPS+=("$cmd")
+                    continue
+                fi
+            fi
+
+            success "✓ $name"
+        else
+            error "✗ $name"
+            info "  Required: ≥$min_ver"
+        fi
+    done
+
+    echo ""
+
+    if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+        # Build missing list
+        local missing_names=()
+        for cmd in "${MISSING_DEPS[@]}"; do
+            IFS='|' read -r name _ _ _ <<< "${TOOL_INFO[$cmd]}"
+            missing_names+=("$name")
+        done
+
+        error "Missing dependencies: ${missing_names[*]}"
+        echo ""
+        info "Install them and try again, or run without -y flag for interactive installation wizard"
+        return 1
+    fi
+
+    success "All prerequisites installed!"
+    return 0
+}
+
 check_prerequisites() {
     clear
 
