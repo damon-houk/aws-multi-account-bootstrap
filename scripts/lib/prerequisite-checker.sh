@@ -64,7 +64,8 @@ declare -A TOOL_INFO=(
 # Dependency order matters!
 DEPENDENCY_ORDER=("git" "node" "aws" "gh" "jq" "cdk")
 
-# Optional dependencies (checked but not required)
+# Optional dependencies (reserved for future use)
+# shellcheck disable=SC2034
 OPTIONAL_DEPS=("yq")
 
 # ============================================================================

@@ -713,19 +713,20 @@ echo -e "${GREEN}✓ Setup Complete!${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Offer to save configuration in interactive mode
-if [ "$MODE" = "interactive" ]; then
-    declare -A CONFIG_DATA
-    CONFIG_DATA[PROJECT_CODE]="$PROJECT_CODE"
-    CONFIG_DATA[EMAIL_PREFIX]="$EMAIL_PREFIX"
-    CONFIG_DATA[OU_ID]="$OU_ID"
-    CONFIG_DATA[GITHUB_ORG]="$GITHUB_ORG"
-    CONFIG_DATA[REPO_NAME]="$REPO_NAME"
-
-    # Go back to bootstrap root directory for config file
-    cd "$SCRIPT_DIR/.."
-    save_config_prompt CONFIG_DATA
-fi
+# TODO: Offer to save configuration in interactive mode
+# Commented out until we test end-to-end - config manager is ready but needs integration testing
+# if [ "$MODE" = "interactive" ]; then
+#     declare -A CONFIG_DATA
+#     CONFIG_DATA[PROJECT_CODE]="$PROJECT_CODE"
+#     CONFIG_DATA[EMAIL_PREFIX]="$EMAIL_PREFIX"
+#     CONFIG_DATA[OU_ID]="$OU_ID"
+#     CONFIG_DATA[GITHUB_ORG]="$GITHUB_ORG"
+#     CONFIG_DATA[REPO_NAME]="$REPO_NAME"
+#
+#     # Go back to bootstrap root directory for config file
+#     cd "$SCRIPT_DIR/.."
+#     save_config_prompt CONFIG_DATA
+# fi
 
 echo ""
 echo -e "${BLUE}Summary:${NC}"

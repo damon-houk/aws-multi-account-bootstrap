@@ -540,4 +540,4 @@ make setup-all
 
 - [Main README](../README.md) - Project overview and quick start
 - [Contributing Guide](../CONTRIBUTING.md) - Development setup
-- [Roadmap](../ROADMAP.md) - Future configuration features planned
+- [Roadmap](./ROADMAP.md) - Future configuration features planned
