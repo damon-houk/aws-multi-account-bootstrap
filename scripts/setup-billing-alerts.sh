@@ -195,7 +195,7 @@ create_budget() {
     echo "  Creating AWS Budget: $BUDGET_NAME (limit: \$$BUDGET_AMOUNT)"
 
     # Create budget JSON
-    cat > /tmp/budget-${ENV}.json <<EOF
+    cat > "/tmp/budget-${ENV}.json" <<EOF
 {
   "BudgetName": "$BUDGET_NAME",
   "BudgetType": "COST",
@@ -226,7 +226,7 @@ create_budget() {
 EOF
 
     # Create notifications JSON
-    cat > /tmp/notifications-${ENV}.json <<EOF
+    cat > "/tmp/notifications-${ENV}.json" <<EOF
 [
   {
     "Notification": {
@@ -276,12 +276,12 @@ EOF
     # Create budget
     aws budgets create-budget \
         --account-id "$ACCOUNT_ID" \
-        --budget file:///tmp/budget-${ENV}.json \
-        --notifications-with-subscribers file:///tmp/notifications-${ENV}.json \
+        --budget "file:///tmp/budget-${ENV}.json" \
+        --notifications-with-subscribers "file:///tmp/notifications-${ENV}.json" \
         2>/dev/null || echo "    Note: Budget may already exist or billing access needed"
 
     # Cleanup temp files
-    rm -f /tmp/budget-${ENV}.json /tmp/notifications-${ENV}.json
+    rm -f "/tmp/budget-${ENV}.json" "/tmp/notifications-${ENV}.json"
 }
 
 # Helper function to get account ID for environment

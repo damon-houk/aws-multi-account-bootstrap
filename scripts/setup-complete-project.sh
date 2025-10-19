@@ -126,6 +126,14 @@ else
     echo -e "${GREEN}✓ Git${NC}"
 fi
 
+if ! command -v gh &> /dev/null; then
+    echo -e "${RED}✗ GitHub CLI not installed${NC}"
+    echo -e "${YELLOW}   Install: brew install gh (macOS) | winget install GitHub.cli (Windows)${NC}"
+    MISSING_DEPS=1
+else
+    echo -e "${GREEN}✓ GitHub CLI${NC}"
+fi
+
 if [ $MISSING_DEPS -eq 1 ]; then
     echo ""
     echo -e "${RED}Please install missing dependencies before continuing${NC}"
@@ -141,11 +149,32 @@ if ! aws sts get-caller-identity &> /dev/null; then
 fi
 
 CALLER_IDENTITY=$(aws sts get-caller-identity)
-echo -e "${GREEN}✓ Authenticated as: $(echo $CALLER_IDENTITY | jq -r '.Arn')${NC}"
+echo -e "${GREEN}✓ Authenticated as: $(echo "$CALLER_IDENTITY" | jq -r '.Arn')${NC}"
+echo ""
+
+# Check GitHub authentication
+if ! gh auth status &> /dev/null; then
+    if [ "$AUTO_CONFIRM" = true ]; then
+        echo -e "${RED}ERROR: Not authenticated with GitHub${NC}"
+        echo "Cannot run in non-interactive mode without GitHub authentication."
+        echo "Please run: gh auth login"
+        exit 1
+    else
+        echo -e "${YELLOW}Not authenticated with GitHub${NC}"
+        echo "Authenticating with GitHub..."
+        gh auth login || {
+            echo -e "${RED}GitHub authentication failed${NC}"
+            exit 1
+        }
+    fi
+fi
+
+GITHUB_USER=$(gh api user -q .login)
+echo -e "${GREEN}✓ Authenticated with GitHub as: ${GITHUB_USER}${NC}"
 echo ""
 
 if [ "$AUTO_CONFIRM" = false ]; then
-    read -p "$(echo -e ${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC} )" -n 1 -r
+    read -p "$(echo -e "${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC}" )" -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Aborted."
@@ -505,6 +534,12 @@ GITKEEP_EOF
 echo -e "${GREEN}✓ Project structure created${NC}"
 echo ""
 
+# Install dependencies to generate package-lock.json
+echo "Installing dependencies..."
+npm install --silent
+echo -e "${GREEN}✓ Dependencies installed and package-lock.json generated${NC}"
+echo ""
+
 # Initialize git if not already initialized
 if [ ! -d ".git" ]; then
     echo "Initializing git repository..."
@@ -523,7 +558,11 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
-    "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
+    if [ "$AUTO_CONFIRM" = true ]; then
+        "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR" --yes
+    else
+        "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
+    fi
 else
     echo -e "${YELLOW}setup-github-repo.sh not found, skipping GitHub repo creation${NC}"
     echo "You'll need to create the repository manually and push"

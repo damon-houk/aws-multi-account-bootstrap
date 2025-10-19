@@ -208,4 +208,117 @@ watch: ## Watch for changes and auto-rebuild
 lint: ## Run linter
 	@npm run lint
 
+.PHONY: lint-scripts
+lint-scripts: ## Lint bash scripts with ShellCheck (optional locally, required in CI)
+	@echo "Linting bash scripts..."
+	@if command -v shellcheck >/dev/null 2>&1; then \
+		shellcheck scripts/*.sh && echo "✓ ShellCheck passed"; \
+	else \
+		echo "⚠️  ShellCheck not installed (optional for local development)"; \
+		echo "   Install: brew install shellcheck (Mac) | apt install shellcheck (Linux)"; \
+		echo "   CI will run ShellCheck automatically"; \
+		echo "✓ Skipped (not required locally)"; \
+	fi
+
+.PHONY: check-links
+check-links: ## Check markdown links
+	@echo "Checking markdown links..."
+	@if [ -f "package.json" ]; then \
+		npm run check:links; \
+	else \
+		npx markdown-link-check@3.11.2 README.md -c .github/markdown-link-check-config.json && \
+		npx markdown-link-check@3.11.2 docs/*.md -c .github/markdown-link-check-config.json && \
+		echo "✓ Link check passed"; \
+	fi
+
+.PHONY: validate-structure
+validate-structure: ## Validate project structure
+	@echo "Validating project structure..."
+	@for file in README.md LICENSE Makefile scripts/setup-complete-project.sh scripts/create-project-accounts.sh scripts/bootstrap-cdk.sh scripts/setup-github-cicd.sh scripts/setup-github-repo.sh scripts/setup-billing-alerts.sh; do \
+		if [ ! -f "$$file" ]; then \
+			echo "✗ Missing: $$file"; \
+			exit 1; \
+		else \
+			echo "✓ Found: $$file"; \
+		fi \
+	done
+	@echo "✓ Structure validation passed"
+
+.PHONY: validate-templates
+validate-templates: ## Validate IaC template structure
+	@echo "Validating IaC template structure..."
+	@if [ ! -d "templates" ]; then \
+		echo "ℹ️  No templates directory found (v1.0 - templates not yet added)"; \
+		echo "✅ Validation passed (templates will be added in v1.1+)"; \
+		exit 0; \
+	fi; \
+	echo "✅ Templates directory found"; \
+	if [ -d "templates/infrastructure" ]; then \
+		echo ""; \
+		echo "ℹ️  Found legacy CDK template structure (v1.0)"; \
+		echo "   Checking for required files..."; \
+		for file in templates/infrastructure/bin/app.ts templates/infrastructure/lib/.gitkeep; do \
+			if [ ! -f "$$file" ]; then \
+				echo "❌ Missing: $$file"; \
+				exit 1; \
+			fi; \
+			echo "✅ Found: $$file"; \
+		done; \
+		echo "✅ Legacy template structure valid"; \
+		exit 0; \
+	fi; \
+	echo ""; \
+	echo "Checking for multi-IaC template structure (v1.1+)..."; \
+	template_count=0; \
+	for iac_dir in templates/*/; do \
+		if [ -d "$$iac_dir" ]; then \
+			iac_tool=$$(basename "$$iac_dir"); \
+			echo ""; \
+			echo "Checking $$iac_tool templates..."; \
+			if [ ! -d "$${iac_dir}minimal" ]; then \
+				echo "❌ Missing minimal template for $$iac_tool"; \
+				echo "   Expected: $${iac_dir}minimal/"; \
+				exit 1; \
+			fi; \
+			echo "✅ $$iac_tool templates valid"; \
+			template_count=$$((template_count + 1)); \
+		fi; \
+	done; \
+	if [ $$template_count -eq 0 ]; then \
+		echo ""; \
+		echo "⚠️  Templates directory exists but has no recognized structure"; \
+		echo "   Expected either:"; \
+		echo "   - Legacy (v1.0): templates/infrastructure/"; \
+		echo "   - Multi-IaC (v1.1+): templates/{cdk,terraform,pulumi}/minimal/"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "✅ All template structures valid ($$template_count IaC tool(s) configured)"
+
+.PHONY: ci-local
+ci-local: ## Run all CI checks locally (before pushing)
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Running CI Checks Locally"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "1️⃣  Linting bash scripts..."
+	@$(MAKE) lint-scripts
+	@echo ""
+	@echo "2️⃣  Checking markdown links..."
+	@$(MAKE) check-links
+	@echo ""
+	@echo "3️⃣  Validating project structure..."
+	@$(MAKE) validate-structure
+	@echo ""
+	@echo "4️⃣  Validating template structure..."
+	@$(MAKE) validate-templates
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  ✅ All CI checks passed!"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "You can now safely push your changes:"
+	@echo "  git push origin $$(git branch --show-current)"
+	@echo ""
+
 .DEFAULT_GOAL := help
