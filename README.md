@@ -68,7 +68,16 @@ You need:
 ```bash
 # 1. Create an OU in AWS Console, get its ID (ou-xxxx-xxxxxxxx)
 
-# 2. Run the setup
+# 2. Preview what will be created (dry-run mode)
+make setup-all \
+  PROJECT_CODE=MYP \
+  EMAIL_PREFIX=your.email \
+  OU_ID=ou-xxxx-xxxxxxxx \
+  GITHUB_ORG=your-github-username \
+  REPO_NAME=my-project \
+  DRY_RUN=true
+
+# 3. Run the actual setup (remove DRY_RUN=true)
 make setup-all \
   PROJECT_CODE=MYP \
   EMAIL_PREFIX=your.email \

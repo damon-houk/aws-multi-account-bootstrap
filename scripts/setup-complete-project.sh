@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # Complete project setup script
-# Usage: ./setup-complete-project.sh [PROJECT_CODE] [EMAIL_PREFIX] [OU_ID] [GITHUB_ORG] [REPO_NAME]
+# Usage: ./setup-complete-project.sh [PROJECT_CODE] [EMAIL_PREFIX] [OU_ID] [GITHUB_ORG] [REPO_NAME] [--dry-run]
 #
 # Configuration precedence:
 #   Interactive mode: CLI args > Config file > Prompts
 #   CI mode: CLI args > Environment variables > Config file > Error
+#
+# Options:
+#   --dry-run    Preview what would be created without actually creating resources
 
 set -e
 
@@ -43,13 +46,39 @@ CLI_EMAIL_PREFIX=""
 CLI_OU_ID=""
 CLI_GITHUB_ORG=""
 CLI_REPO_NAME=""
+DRY_RUN=false
 
-# Parse positional arguments
-if [ "${#@}" -ge 1 ]; then CLI_PROJECT_CODE="$1"; fi
-if [ "${#@}" -ge 2 ]; then CLI_EMAIL_PREFIX="$2"; fi
-if [ "${#@}" -ge 3 ]; then CLI_OU_ID="$3"; fi
-if [ "${#@}" -ge 4 ]; then CLI_GITHUB_ORG="$4"; fi
-if [ "${#@}" -ge 5 ]; then CLI_REPO_NAME="$5"; fi
+# Check for --dry-run flag
+for arg in "$@"; do
+    if [ "$arg" = "--dry-run" ]; then
+        DRY_RUN=true
+        break
+    fi
+done
+
+# Parse positional arguments (filter out --dry-run)
+POSITIONAL_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" != "--dry-run" ]; then
+        POSITIONAL_ARGS+=("$arg")
+    fi
+done
+
+# Assign positional arguments
+if [ "${#POSITIONAL_ARGS[@]}" -ge 1 ]; then CLI_PROJECT_CODE="${POSITIONAL_ARGS[0]}"; fi
+if [ "${#POSITIONAL_ARGS[@]}" -ge 2 ]; then CLI_EMAIL_PREFIX="${POSITIONAL_ARGS[1]}"; fi
+if [ "${#POSITIONAL_ARGS[@]}" -ge 3 ]; then CLI_OU_ID="${POSITIONAL_ARGS[2]}"; fi
+if [ "${#POSITIONAL_ARGS[@]}" -ge 4 ]; then CLI_GITHUB_ORG="${POSITIONAL_ARGS[3]}"; fi
+if [ "${#POSITIONAL_ARGS[@]}" -ge 5 ]; then CLI_REPO_NAME="${POSITIONAL_ARGS[4]}"; fi
+
+# Show dry-run mode banner if enabled
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║                    DRY RUN MODE ENABLED                  ║${NC}"
+    echo -e "${YELLOW}║   No resources will be created. Preview mode only.       ║${NC}"
+    echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+fi
 
 # Show config file info if in interactive mode
 if [ "$MODE" = "interactive" ]; then
@@ -92,7 +121,7 @@ else
         echo -e "${BLUE}Project Code${NC}"
         echo "Enter a 3-letter code for your project (e.g., TPA for Therapy Practice App)"
         while true; do
-            read -p "Project Code (3 uppercase letters): " PROJECT_CODE
+            read -r -p "Project Code (3 uppercase letters): " PROJECT_CODE
             if validate_project_code "$PROJECT_CODE"; then
                 break
             else
@@ -107,7 +136,7 @@ else
         echo "Enter your Gmail address (we'll use + addressing for account emails)"
         echo "Example: your.email@gmail.com"
         while true; do
-            read -p "Email: " EMAIL_PREFIX
+            read -r -p "Email: " EMAIL_PREFIX
             if validate_email_prefix "$EMAIL_PREFIX"; then
                 break
             else
@@ -123,7 +152,7 @@ else
         echo "Format: ou-xxxx-xxxxxxxx"
         echo "Find this in AWS Organizations console"
         while true; do
-            read -p "OU ID: " OU_ID
+            read -r -p "OU ID: " OU_ID
             if validate_ou_id "$OU_ID"; then
                 break
             else
@@ -135,13 +164,13 @@ else
 
     if [ -z "$GITHUB_ORG" ]; then
         echo -e "${BLUE}GitHub Organization/Username${NC}"
-        read -p "GitHub Org: " GITHUB_ORG
+        read -r -p "GitHub Org: " GITHUB_ORG
         echo ""
     fi
 
     if [ -z "$REPO_NAME" ]; then
         echo -e "${BLUE}Repository Name${NC}"
-        read -p "Repo Name: " REPO_NAME
+        read -r -p "Repo Name: " REPO_NAME
         echo ""
     fi
 fi
@@ -316,7 +345,17 @@ echo -e "${CYAN}STEP 1/4: Creating AWS Accounts${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "$SCRIPT_DIR/create-project-accounts.sh" ]; then
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would create the following AWS accounts:${NC}"
+    echo ""
+    echo "  • ${PROJECT_CODE}-dev (${EMAIL_PREFIX}+${PROJECT_CODE}-dev@gmail.com)"
+    echo "  • ${PROJECT_CODE}-staging (${EMAIL_PREFIX}+${PROJECT_CODE}-staging@gmail.com)"
+    echo "  • ${PROJECT_CODE}-prod (${EMAIL_PREFIX}+${PROJECT_CODE}-prod@gmail.com)"
+    echo ""
+    echo "  Organization Unit: ${OU_ID}"
+    echo "  IAM Role: OrganizationAccountAccessRole"
+    echo ""
+elif [ -f "$SCRIPT_DIR/create-project-accounts.sh" ]; then
     "$SCRIPT_DIR/create-project-accounts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX" "$OU_ID"
 else
     echo -e "${YELLOW}create-project-accounts.sh not found, skipping account creation${NC}"
@@ -329,14 +368,26 @@ echo -e "${CYAN}STEP 2/4: Bootstrapping CDK${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Wait a bit for accounts to be fully ready
-echo "Waiting 30 seconds for accounts to be fully created..."
-sleep 30
-
-if [ -f "$SCRIPT_DIR/bootstrap-cdk.sh" ]; then
-    "$SCRIPT_DIR/bootstrap-cdk.sh" "$PROJECT_CODE"
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would bootstrap AWS CDK in the following accounts:${NC}"
+    echo ""
+    echo "  • ${PROJECT_CODE}-dev account (us-east-1 region)"
+    echo "  • ${PROJECT_CODE}-staging account (us-east-1 region)"
+    echo "  • ${PROJECT_CODE}-prod account (us-east-1 region)"
+    echo ""
+    echo "  This creates CloudFormation stack: CDKToolkit"
+    echo "  Includes S3 bucket for CDK assets and ECR repository for container images"
+    echo ""
 else
-    echo -e "${YELLOW}bootstrap-cdk.sh not found, skipping CDK bootstrap${NC}"
+    # Wait a bit for accounts to be fully ready
+    echo "Waiting 30 seconds for accounts to be fully created..."
+    sleep 30
+
+    if [ -f "$SCRIPT_DIR/bootstrap-cdk.sh" ]; then
+        "$SCRIPT_DIR/bootstrap-cdk.sh" "$PROJECT_CODE"
+    else
+        echo -e "${YELLOW}bootstrap-cdk.sh not found, skipping CDK bootstrap${NC}"
+    fi
 fi
 
 echo ""
@@ -345,7 +396,22 @@ echo -e "${CYAN}STEP 3/5: Setting up GitHub Actions CI/CD${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "$SCRIPT_DIR/setup-github-cicd.sh" ]; then
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would configure GitHub Actions OIDC authentication:${NC}"
+    echo ""
+    echo "  AWS IAM OIDC Identity Providers:"
+    echo "  • ${PROJECT_CODE}-dev account: token.actions.githubusercontent.com"
+    echo "  • ${PROJECT_CODE}-staging account: token.actions.githubusercontent.com"
+    echo "  • ${PROJECT_CODE}-prod account: token.actions.githubusercontent.com"
+    echo ""
+    echo "  IAM Roles for GitHub Actions:"
+    echo "  • ${PROJECT_CODE}-dev: GitHubActionsRole"
+    echo "  • ${PROJECT_CODE}-staging: GitHubActionsRole"
+    echo "  • ${PROJECT_CODE}-prod: GitHubActionsRole"
+    echo ""
+    echo "  Trust relationship: ${GITHUB_ORG}/${REPO_NAME}"
+    echo ""
+elif [ -f "$SCRIPT_DIR/setup-github-cicd.sh" ]; then
     "$SCRIPT_DIR/setup-github-cicd.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
 else
     echo -e "${YELLOW}setup-github-cicd.sh not found, skipping GitHub setup${NC}"
@@ -357,22 +423,50 @@ echo -e "${CYAN}STEP 4/5: Creating Project Structure${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Create basic project structure
-echo "Creating project directory structure in $PROJECT_DIR..."
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would create project structure in: ${PROJECT_DIR}${NC}"
+    echo ""
+    echo "  Directory structure:"
+    echo "  ├── infrastructure/"
+    echo "  │   ├── lib/"
+    echo "  │   ├── bin/"
+    echo "  │   └── test/"
+    echo "  ├── src/"
+    echo "  │   ├── frontend/"
+    echo "  │   ├── backend/"
+    echo "  │   └── shared/"
+    echo "  ├── docs/"
+    echo "  ├── .github/workflows/"
+    echo "  ├── package.json"
+    echo "  ├── tsconfig.json"
+    echo "  ├── cdk.json"
+    echo "  ├── .gitignore"
+    echo "  ├── README.md"
+    echo "  └── Makefile"
+    echo ""
+else
+    # Create basic project structure
+    echo "Creating project directory structure in $PROJECT_DIR..."
 
-# Create the output directory
-mkdir -p "$PROJECT_DIR"
+    # Create the output directory
+    mkdir -p "$PROJECT_DIR"
 
-# Change to project directory for all file operations
-cd "$PROJECT_DIR"
+    # Change to project directory for all file operations
+    cd "$PROJECT_DIR"
 
-mkdir -p infrastructure/{lib,bin,test}
-mkdir -p src/{frontend,backend,shared}
-mkdir -p docs
+    mkdir -p infrastructure/{lib,bin,test}
+    mkdir -p src/{frontend,backend,shared}
+    mkdir -p docs
+fi
 
-# Create package.json
-PROJECT_CODE_LOWER=$(echo "$PROJECT_CODE" | tr '[:upper:]' '[:lower:]')
-cat > package.json <<PACKAGE_EOF
+# Skip file creation in dry-run mode
+if [ "$DRY_RUN" != true ]; then
+    # Change to project directory for all file operations
+    cd "$PROJECT_DIR"
+
+    # Create package.json
+    PROJECT_CODE_LOWER=$(echo "$PROJECT_CODE" | tr '[:upper:]' '[:lower:]')
+    cat > package.json <<PACKAGE_EOF
 {
   "name": "${PROJECT_CODE_LOWER}-app",
   "version": "0.1.0",
@@ -677,13 +771,28 @@ else
     echo -e "${YELLOW}Git repository already exists${NC}"
 fi
 
+fi  # End of file creation block (dry-run check)
+
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}STEP 5/6: Creating & Configuring GitHub Repository${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would create GitHub repository:${NC}"
+    echo ""
+    echo "  Repository: ${GITHUB_ORG}/${REPO_NAME}"
+    echo "  Visibility: Private"
+    echo "  Auto-init: Yes (with README)"
+    echo ""
+    echo "  Would configure:"
+    echo "  • Repository secrets for AWS account IDs"
+    echo "  • GitHub Actions workflows for CI/CD"
+    echo "  • Branch protection rules"
+    echo "  • Push initial commit"
+    echo ""
+elif [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
     if [ "$MODE" = "ci" ]; then
         "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR" --yes
     else
@@ -700,7 +809,17 @@ echo -e "${CYAN}STEP 6/6: Setting Up Billing Alerts${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-if [ -f "$SCRIPT_DIR/setup-billing-alerts.sh" ]; then
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN] Would create billing alerts:${NC}"
+    echo ""
+    echo "  CloudWatch Alarms in each account:"
+    echo "  • ${PROJECT_CODE}-dev: Warning at \$15, Budget \$25"
+    echo "  • ${PROJECT_CODE}-staging: Warning at \$15, Budget \$25"
+    echo "  • ${PROJECT_CODE}-prod: Warning at \$15, Budget \$25"
+    echo ""
+    echo "  SNS notifications to: ${EMAIL_PREFIX}@gmail.com"
+    echo ""
+elif [ -f "$SCRIPT_DIR/setup-billing-alerts.sh" ]; then
     "$SCRIPT_DIR/setup-billing-alerts.sh" "$PROJECT_CODE" "$EMAIL_PREFIX@gmail.com" "$PROJECT_DIR"
 else
     echo -e "${YELLOW}setup-billing-alerts.sh not found, skipping billing alerts${NC}"
@@ -709,7 +828,11 @@ fi
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✓ Setup Complete!${NC}"
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}✓ Dry Run Complete!${NC}"
+else
+    echo -e "${GREEN}✓ Setup Complete!${NC}"
+fi
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -729,39 +852,55 @@ echo ""
 # fi
 
 echo ""
-echo -e "${BLUE}Summary:${NC}"
-echo "  • 3 AWS accounts created (dev, staging, prod)"
-echo "  • CDK bootstrapped in all accounts"
-echo "  • GitHub Actions CI/CD configured"
-echo "  • GitHub repository created and configured"
-echo "  • Semantic versioning enabled"
-echo "  • Branch protection enabled"
-echo "  • Environments configured (dev, staging, prod)"
-echo "  • Billing alerts configured (\$15 alert, \$25 limit per account)"
-echo "  • Project structure initialized"
-echo "  • Initial release v0.1.0 created"
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}Dry Run Summary - What WOULD be created:${NC}"
+    echo "  • 3 AWS accounts (dev, staging, prod)"
+    echo "  • CDK bootstrap in all accounts"
+    echo "  • GitHub Actions OIDC authentication"
+    echo "  • GitHub repository with CI/CD workflows"
+    echo "  • Branch protection and environments"
+    echo "  • Billing alerts (\$15 warning, \$25 budget)"
+    echo "  • Complete project structure with CDK setup"
+    echo ""
+    echo -e "${BLUE}To execute this setup for real:${NC}"
+    echo "  Run the same command without --dry-run flag"
+else
+    echo -e "${BLUE}Summary:${NC}"
+    echo "  • 3 AWS accounts created (dev, staging, prod)"
+    echo "  • CDK bootstrapped in all accounts"
+    echo "  • GitHub Actions CI/CD configured"
+    echo "  • GitHub repository created and configured"
+    echo "  • Semantic versioning enabled"
+    echo "  • Branch protection enabled"
+    echo "  • Environments configured (dev, staging, prod)"
+    echo "  • Billing alerts configured (\$15 alert, \$25 limit per account)"
+    echo "  • Project structure initialized"
+    echo "  • Initial release v0.1.0 created"
+fi
 echo ""
-echo -e "${BLUE}Next Steps:${NC}"
-echo ""
-echo "1. ${YELLOW}IMPORTANT: Confirm SNS email subscriptions!${NC}"
-echo "   Check ${EMAIL_PREFIX}@gmail.com for confirmation emails"
-echo ""
-echo "2. Navigate to your project directory:"
-echo "   ${CYAN}cd $PROJECT_DIR${NC}"
-echo ""
-echo "3. Review the setup summaries:"
-echo "   ${CYAN}cat CICD_SETUP_SUMMARY.md${NC}"
-echo "   ${CYAN}cat GITHUB_SETUP_SUMMARY.md${NC}"
-echo "   ${CYAN}cat BILLING_ALERTS_SUMMARY.md${NC}"
-echo ""
-echo "4. Install dependencies:"
-echo "   ${CYAN}npm install${NC}"
-echo ""
-echo "5. Start building your infrastructure:"
-echo "   • Add CDK stacks to infrastructure/lib/"
-echo "   • Use semantic commits: ${CYAN}git commit -m \"feat: Add new feature\"${NC}"
-echo "   • Test locally: ${CYAN}npm run cdk synth${NC}"
-echo "   • Deploy to dev: ${CYAN}ENV=dev npm run cdk deploy${NC}"
+if [ "$DRY_RUN" != true ]; then
+    echo -e "${BLUE}Next Steps:${NC}"
+    echo ""
+    echo "1. ${YELLOW}IMPORTANT: Confirm SNS email subscriptions!${NC}"
+    echo "   Check ${EMAIL_PREFIX}@gmail.com for confirmation emails"
+    echo ""
+    echo "2. Navigate to your project directory:"
+    echo "   ${CYAN}cd $PROJECT_DIR${NC}"
+    echo ""
+    echo "3. Review the setup summaries:"
+    echo "   ${CYAN}cat CICD_SETUP_SUMMARY.md${NC}"
+    echo "   ${CYAN}cat GITHUB_SETUP_SUMMARY.md${NC}"
+    echo "   ${CYAN}cat BILLING_ALERTS_SUMMARY.md${NC}"
+    echo ""
+    echo "4. Install dependencies:"
+    echo "   ${CYAN}npm install${NC}"
+    echo ""
+    echo "5. Start building your infrastructure:"
+    echo "   • Add CDK stacks to infrastructure/lib/"
+    echo "   • Use semantic commits: ${CYAN}git commit -m \"feat: Add new feature\"${NC}"
+    echo "   • Test locally: ${CYAN}npm run cdk synth${NC}"
+    echo "   • Deploy to dev: ${CYAN}ENV=dev npm run cdk deploy${NC}"
+fi
 echo ""
 echo -e "${YELLOW}Important:${NC} Use semantic commit messages:"
 echo "  • ${CYAN}feat:${NC} New feature (minor version bump)"
