@@ -23,6 +23,8 @@ In **one command**, this tool sets up:
 - ✅ **CI/CD Pipeline** with GitHub Actions (OIDC, no credentials stored)
 - ✅ **Semantic Versioning** with automated releases
 - ✅ **Billing Alerts** ($15 alert, $25 budget per account)
+- ✅ **Cost Estimation** with real-time AWS pricing
+- ✅ **Dry-Run Mode** preview before creating resources
 - ✅ **Complete Documentation** auto-generated for your project
 
 **Before:** Days of manual AWS console clicking, YAML editing, and documentation writing.
@@ -192,6 +194,30 @@ Configures billing alerts for each account:
 ```
 
 ---
+
+## 💰 Cost Estimation
+
+Get accurate, up-to-date AWS cost estimates before you start:
+
+```bash
+# Estimate costs for the basic setup
+./scripts/estimate-costs.sh
+
+# Estimate with additional services
+./scripts/estimate-costs.sh --stacks api-lambda,static-website
+
+# Estimate for different regions
+./scripts/estimate-costs.sh --region eu-west-1
+
+# List available stack types
+./scripts/estimate-costs.sh --list-stacks
+```
+
+The estimator uses the **AWS Pricing API** for real-time pricing and includes:
+- Base infrastructure costs (CloudWatch, S3, ECR)
+- Usage-based estimates (minimal, light, moderate, heavy)
+- Additional stack costs (API Gateway, Lambda, RDS, etc.)
+- Region-specific pricing
 
 ## 📋 Usage Examples
 
