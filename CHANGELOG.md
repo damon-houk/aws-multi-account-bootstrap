@@ -5,7 +5,38 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.4.0...v1.5.0) (2025-10-19)
+## IMPORTANT: Version Reset to v0.x.x
+
+As of October 2025, we are resetting the version from v1.5.0 to v0.6.0 to better reflect the project's pre-release status. Since there are no production users yet and the project is still in active development with frequent breaking changes expected, the v0.x.x versioning is more appropriate. See [VERSIONING.md](VERSIONING.md) for details.
+
+## [0.6.0] - 2025-10-19 (Unreleased)
+
+### Added
+- Mode-based configuration system with YAML/JSON support
+- Environment variable configuration (BOOTSTRAP_* prefix)
+- CI mode with auto-detection (CI, GITHUB_ACTIONS, GITLAB_CI)
+- Input validation for PROJECT_CODE, EMAIL_PREFIX, OU_ID
+- Comprehensive configuration guide (docs/CONFIGURATION.md)
+- Test suite for configuration system (no AWS/GitHub resources required)
+- VERSIONING.md to explain pre-1.0 status
+
+### Changed
+- setup-complete-project.sh refactored to use new config-manager library
+- Configuration precedence now mode-based (interactive vs CI)
+- yq added as optional dependency for YAML support
+- **BREAKING**: Reset version from v1.5.0 to v0.6.0 to reflect pre-release status
+
+### Fixed
+- ShellCheck warnings in prerequisite-checker.sh
+- Broken link in CONFIGURATION.md
+
+---
+
+## Previous Releases (Before Version Reset)
+
+The following releases were made before we adopted proper v0.x.x versioning:
+
+### [1.5.0] - 2025-10-19 (Now v0.5.0)
 
 ### Features
 

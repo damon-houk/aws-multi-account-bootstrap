@@ -1,12 +1,20 @@
 #!/bin/bash
 
 # Complete project setup script
-# Usage: ./setup-complete-project.sh TPA damon.o.houk ou-813y-xxxxxxxx github-org repo-name
+# Usage: ./setup-complete-project.sh [PROJECT_CODE] [EMAIL_PREFIX] [OU_ID] [GITHUB_ORG] [REPO_NAME]
+#
+# Configuration precedence:
+#   Interactive mode: CLI args > Config file > Prompts
+#   CI mode: CLI args > Environment variables > Config file > Error
 
 set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source config manager
+# shellcheck source=scripts/lib/config-manager.sh
+source "$SCRIPT_DIR/lib/config-manager.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,51 +34,117 @@ cat << "EOF"
 EOF
 echo -e "${NC}"
 
-# Parse arguments
-AUTO_CONFIRM=false
+# Detect mode
+MODE=$(detect_mode)
 
-# Check for -y or --yes flag
-for arg in "$@"; do
-    if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
-        AUTO_CONFIRM=true
-    fi
-done
+# Parse CLI arguments (optional)
+CLI_PROJECT_CODE=""
+CLI_EMAIL_PREFIX=""
+CLI_OU_ID=""
+CLI_GITHUB_ORG=""
+CLI_REPO_NAME=""
 
-# Remove -y/--yes from arguments
-ARGS=()
-for arg in "$@"; do
-    if [[ "$arg" != "-y" && "$arg" != "--yes" ]]; then
-        ARGS+=("$arg")
-    fi
-done
+# Parse positional arguments
+if [ "${#@}" -ge 1 ]; then CLI_PROJECT_CODE="$1"; fi
+if [ "${#@}" -ge 2 ]; then CLI_EMAIL_PREFIX="$2"; fi
+if [ "${#@}" -ge 3 ]; then CLI_OU_ID="$3"; fi
+if [ "${#@}" -ge 4 ]; then CLI_GITHUB_ORG="$4"; fi
+if [ "${#@}" -ge 5 ]; then CLI_REPO_NAME="$5"; fi
 
-# Check arguments
-if [ "${#ARGS[@]}" -ne 5 ]; then
-    echo -e "${RED}ERROR: Missing required arguments${NC}"
+# Show config file info if in interactive mode
+if [ "$MODE" = "interactive" ]; then
+    show_config_info
     echo ""
-    echo "Usage: $0 <PROJECT_CODE> <EMAIL_PREFIX> <OU_ID> <GITHUB_ORG> <REPO_NAME> [-y|--yes]"
-    echo ""
-    echo "Example:"
-    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app"
-    echo "  $0 TPA damon.o.houk ou-813y-8teevv2l your-github-username therapy-practice-app -y"
-    echo ""
-    echo "Options:"
-    echo "  -y, --yes    Skip confirmation prompt"
-    echo ""
-    echo "This script will:"
-    echo "  1. Create 3 AWS accounts (dev, staging, prod)"
-    echo "  2. Bootstrap CDK in all accounts"
-    echo "  3. Set up GitHub Actions CI/CD with OIDC"
-    echo "  4. Generate all necessary configuration files"
-    echo ""
-    exit 1
 fi
 
-PROJECT_CODE=${ARGS[0]}
-EMAIL_PREFIX=${ARGS[1]}
-OU_ID=${ARGS[2]}
-GITHUB_ORG=${ARGS[3]}
-REPO_NAME=${ARGS[4]}
+# Load configuration values using mode-based precedence
+PROJECT_CODE=$(get_config "PROJECT_CODE" "$CLI_PROJECT_CODE")
+EMAIL_PREFIX=$(get_config "EMAIL_PREFIX" "$CLI_EMAIL_PREFIX")
+OU_ID=$(get_config "OU_ID" "$CLI_OU_ID")
+GITHUB_ORG=$(get_config "GITHUB_ORG" "$CLI_GITHUB_ORG")
+REPO_NAME=$(get_config "REPO_NAME" "$CLI_REPO_NAME")
+
+# Handle missing values based on mode
+if [ "$MODE" = "ci" ]; then
+    # CI mode: Error if any value is missing
+    MISSING=()
+    [ -z "$PROJECT_CODE" ] && MISSING+=("PROJECT_CODE")
+    [ -z "$EMAIL_PREFIX" ] && MISSING+=("EMAIL_PREFIX")
+    [ -z "$OU_ID" ] && MISSING+=("OU_ID")
+    [ -z "$GITHUB_ORG" ] && MISSING+=("GITHUB_ORG")
+    [ -z "$REPO_NAME" ] && MISSING+=("REPO_NAME")
+
+    if [ ${#MISSING[@]} -gt 0 ]; then
+        echo -e "${RED}ERROR: Missing required configuration in CI mode${NC}"
+        echo ""
+        echo "Missing: ${MISSING[*]}"
+        echo ""
+        echo "Set via:"
+        echo "  • CLI arguments: $0 PROJECT_CODE EMAIL_PREFIX OU_ID GITHUB_ORG REPO_NAME"
+        echo "  • Environment variables: BOOTSTRAP_PROJECT_CODE, BOOTSTRAP_EMAIL_PREFIX, etc."
+        echo "  • Config file: .aws-bootstrap.yml or .aws-bootstrap.json"
+        echo ""
+        exit 1
+    fi
+else
+    # Interactive mode: Prompt for missing values
+    if [ -z "$PROJECT_CODE" ]; then
+        echo -e "${BLUE}Project Code${NC}"
+        echo "Enter a 3-letter code for your project (e.g., TPA for Therapy Practice App)"
+        while true; do
+            read -p "Project Code (3 uppercase letters): " PROJECT_CODE
+            if validate_project_code "$PROJECT_CODE"; then
+                break
+            else
+                echo -e "${RED}Invalid project code. Must be exactly 3 uppercase letters/numbers.${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$EMAIL_PREFIX" ]; then
+        echo -e "${BLUE}Email Address${NC}"
+        echo "Enter your Gmail address (we'll use + addressing for account emails)"
+        echo "Example: your.email@gmail.com"
+        while true; do
+            read -p "Email: " EMAIL_PREFIX
+            if validate_email_prefix "$EMAIL_PREFIX"; then
+                break
+            else
+                echo -e "${RED}Invalid email format.${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$OU_ID" ]; then
+        echo -e "${BLUE}Organization Unit ID${NC}"
+        echo "Enter the AWS Organization Unit ID where accounts should be created"
+        echo "Format: ou-xxxx-xxxxxxxx"
+        echo "Find this in AWS Organizations console"
+        while true; do
+            read -p "OU ID: " OU_ID
+            if validate_ou_id "$OU_ID"; then
+                break
+            else
+                echo -e "${RED}Invalid OU ID format. Must be: ou-xxxx-xxxxxxxx${NC}"
+            fi
+        done
+        echo ""
+    fi
+
+    if [ -z "$GITHUB_ORG" ]; then
+        echo -e "${BLUE}GitHub Organization/Username${NC}"
+        read -p "GitHub Org: " GITHUB_ORG
+        echo ""
+    fi
+
+    if [ -z "$REPO_NAME" ]; then
+        echo -e "${BLUE}Repository Name${NC}"
+        read -p "Repo Name: " REPO_NAME
+        echo ""
+    fi
+fi
 
 # Define project output directory
 PROJECT_DIR="$SCRIPT_DIR/../output/$PROJECT_CODE"
@@ -87,57 +161,109 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Check prerequisites
-echo -e "${BLUE}Checking prerequisites...${NC}"
+# Source the prerequisite checker
+# shellcheck source=scripts/lib/prerequisite-checker.sh
+if [ -f "$SCRIPT_DIR/lib/prerequisite-checker.sh" ]; then
+    # The enhanced prerequisite checker requires bash 4+
+    # If we're in bash 3, try to re-exec with bash 5 if available
+    if [ "${BASH_VERSINFO[0]}" -lt 4 ] && command -v /opt/homebrew/bin/bash &> /dev/null; then
+        echo -e "${BLUE}Note: Re-running prerequisite check with Bash 5 for enhanced UX${NC}"
+        echo ""
+        /opt/homebrew/bin/bash "$SCRIPT_DIR/lib/prerequisite-checker.sh" || {
+            echo ""
+            echo -e "${RED}Prerequisite check failed${NC}"
+            exit 1
+        }
+    elif [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+        # We're already in bash 4+, source it directly
+        source "$SCRIPT_DIR/lib/prerequisite-checker.sh"
+    else
+        # Bash 3 and no bash 5 available - show helpful message
+        echo -e "${YELLOW}Enhanced prerequisite checker requires Bash 4+${NC}"
+        echo "You're running Bash ${BASH_VERSION}"
+        echo ""
+        echo "For the best experience, install Bash 5:"
+        echo "  brew install bash"
+        echo ""
+        echo "Continuing with basic prerequisite check..."
+        echo ""
+    fi
 
-MISSING_DEPS=0
-
-if ! command -v aws &> /dev/null; then
-    echo -e "${RED}✗ AWS CLI not installed${NC}"
-    MISSING_DEPS=1
+    if [ "$MODE" = "ci" ]; then
+        # In CI mode, use simple prerequisite checker
+        check_prerequisites_simple || {
+            echo ""
+            echo -e "${RED}Setup cannot continue without required dependencies${NC}"
+            exit 1
+        }
+    else
+        # In interactive mode, use the full prerequisite checker
+        check_prerequisites || {
+            echo ""
+            echo -e "${RED}Setup cannot continue without required dependencies${NC}"
+            exit 1
+        }
+    fi
 else
-    echo -e "${GREEN}✓ AWS CLI${NC}"
-fi
+    # Fallback if prerequisite-checker.sh not found
+    echo -e "${BLUE}Checking prerequisites...${NC}"
 
-if ! command -v cdk &> /dev/null; then
-    echo -e "${RED}✗ AWS CDK not installed (npm install -g aws-cdk)${NC}"
-    MISSING_DEPS=1
-else
-    echo -e "${GREEN}✓ AWS CDK${NC}"
-fi
+    MISSING_COUNT=0
 
-if ! command -v jq &> /dev/null; then
-    echo -e "${RED}✗ jq not installed (brew install jq)${NC}"
-    MISSING_DEPS=1
-else
-    echo -e "${GREEN}✓ jq${NC}"
-fi
+    if ! command -v aws &> /dev/null; then
+        echo -e "${RED}✗ AWS CLI not installed${NC}"
+        MISSING_COUNT=1
+    else
+        echo -e "${GREEN}✓ AWS CLI${NC}"
+    fi
 
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}✗ Node.js not installed${NC}"
-    MISSING_DEPS=1
-else
-    echo -e "${GREEN}✓ Node.js ($(node --version))${NC}"
-fi
+    if ! command -v cdk &> /dev/null; then
+        echo -e "${RED}✗ AWS CDK not installed (npm install -g aws-cdk)${NC}"
+        MISSING_COUNT=1
+    else
+        echo -e "${GREEN}✓ AWS CDK${NC}"
+    fi
 
-if ! command -v git &> /dev/null; then
-    echo -e "${RED}✗ Git not installed${NC}"
-    MISSING_DEPS=1
-else
-    echo -e "${GREEN}✓ Git${NC}"
-fi
+    if ! command -v jq &> /dev/null; then
+        echo -e "${RED}✗ jq not installed${NC}"
+        MISSING_COUNT=1
+    else
+        echo -e "${GREEN}✓ jq${NC}"
+    fi
 
-if ! command -v gh &> /dev/null; then
-    echo -e "${RED}✗ GitHub CLI not installed${NC}"
-    echo -e "${YELLOW}   Install: brew install gh (macOS) | winget install GitHub.cli (Windows)${NC}"
-    MISSING_DEPS=1
-else
-    echo -e "${GREEN}✓ GitHub CLI${NC}"
-fi
+    if ! command -v node &> /dev/null; then
+        echo -e "${RED}✗ Node.js not installed${NC}"
+        MISSING_COUNT=1
+    else
+        NODE_VERSION=$(node --version | sed 's/v//')
+        NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
+        if [ "$NODE_MAJOR" -lt 20 ]; then
+            echo -e "${YELLOW}⚠ Node.js ${NODE_VERSION} (requires ≥20.0.0)${NC}"
+            MISSING_COUNT=1
+        else
+            echo -e "${GREEN}✓ Node.js (v${NODE_VERSION})${NC}"
+        fi
+    fi
 
-if [ $MISSING_DEPS -eq 1 ]; then
-    echo ""
-    echo -e "${RED}Please install missing dependencies before continuing${NC}"
-    exit 1
+    if ! command -v git &> /dev/null; then
+        echo -e "${RED}✗ Git not installed${NC}"
+        MISSING_COUNT=1
+    else
+        echo -e "${GREEN}✓ Git${NC}"
+    fi
+
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}✗ GitHub CLI not installed${NC}"
+        MISSING_COUNT=1
+    else
+        echo -e "${GREEN}✓ GitHub CLI${NC}"
+    fi
+
+    if [ $MISSING_COUNT -eq 1 ]; then
+        echo ""
+        echo -e "${RED}Please install missing dependencies before continuing${NC}"
+        exit 1
+    fi
 fi
 
 # Check AWS authentication
@@ -154,9 +280,9 @@ echo ""
 
 # Check GitHub authentication
 if ! gh auth status &> /dev/null; then
-    if [ "$AUTO_CONFIRM" = true ]; then
+    if [ "$MODE" = "ci" ]; then
         echo -e "${RED}ERROR: Not authenticated with GitHub${NC}"
-        echo "Cannot run in non-interactive mode without GitHub authentication."
+        echo "Cannot run in CI mode without GitHub authentication."
         echo "Please run: gh auth login"
         exit 1
     else
@@ -173,7 +299,7 @@ GITHUB_USER=$(gh api user -q .login)
 echo -e "${GREEN}✓ Authenticated with GitHub as: ${GITHUB_USER}${NC}"
 echo ""
 
-if [ "$AUTO_CONFIRM" = false ]; then
+if [ "$MODE" = "interactive" ]; then
     read -p "$(echo -e "${YELLOW}Proceed with setup? This will create AWS resources. [y/N]${NC}" )" -n 1 -r
     echo ""
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -181,7 +307,7 @@ if [ "$AUTO_CONFIRM" = false ]; then
         exit 1
     fi
 else
-    echo -e "${GREEN}Auto-confirming (--yes flag provided)${NC}"
+    echo -e "${GREEN}Auto-confirming (CI mode)${NC}"
 fi
 
 echo ""
@@ -260,15 +386,15 @@ cat > package.json <<PACKAGE_EOF
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
-    "@types/node": "^20.0.0",
-    "aws-cdk": "^2.100.0",
+    "@types/node": "^22.0.0",
+    "aws-cdk": "^2.220.0",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.6.0"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.100.0",
+    "aws-cdk-lib": "^2.220.0",
     "constructs": "^10.0.0"
   }
 }
@@ -558,7 +684,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ -f "$SCRIPT_DIR/setup-github-repo.sh" ]; then
-    if [ "$AUTO_CONFIRM" = true ]; then
+    if [ "$MODE" = "ci" ]; then
         "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR" --yes
     else
         "$SCRIPT_DIR/setup-github-repo.sh" "$PROJECT_CODE" "$GITHUB_ORG" "$REPO_NAME" "$PROJECT_DIR"
@@ -585,6 +711,23 @@ echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✓ Setup Complete!${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# TODO: Offer to save configuration in interactive mode
+# Commented out until we test end-to-end - config manager is ready but needs integration testing
+# if [ "$MODE" = "interactive" ]; then
+#     declare -A CONFIG_DATA
+#     CONFIG_DATA[PROJECT_CODE]="$PROJECT_CODE"
+#     CONFIG_DATA[EMAIL_PREFIX]="$EMAIL_PREFIX"
+#     CONFIG_DATA[OU_ID]="$OU_ID"
+#     CONFIG_DATA[GITHUB_ORG]="$GITHUB_ORG"
+#     CONFIG_DATA[REPO_NAME]="$REPO_NAME"
+#
+#     # Go back to bootstrap root directory for config file
+#     cd "$SCRIPT_DIR/.."
+#     save_config_prompt CONFIG_DATA
+# fi
+
 echo ""
 echo -e "${BLUE}Summary:${NC}"
 echo "  • 3 AWS accounts created (dev, staging, prod)"
