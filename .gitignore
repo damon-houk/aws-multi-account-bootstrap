@@ -45,3 +45,8 @@ temp/
 
 # Generated Projects
 output/
+
+# Work/Session Files
+.work/
+*_TEST_*.md
+TEST_*.md
