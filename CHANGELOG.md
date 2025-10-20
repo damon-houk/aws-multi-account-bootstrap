@@ -5,6 +5,48 @@ All notable changes to the AWS Multi-Account Bootstrap tool will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/damon-houk/aws-multi-account-bootstrap/compare/v1.5.0...v2.0.0) (2025-10-20)
+
+### ⚠ BREAKING CHANGES
+
+* Version reset from v1.5.0 to v0.6.0 to reflect
+pre-release status. Breaking changes expected between v0.x releases.
+
+- Add comprehensive test suite for configuration system
+- Tests run without AWS/GitHub resources (24/24 passing)
+- Add VERSIONING.md explaining v0.x.x strategy
+- Update README with pre-1.0 warning badges
+- Update CHANGELOG with version reset notice
+- Remove old PR_DESCRIPTION.md
+* Version reset from v1.5.0 to v0.6.0 to reflect
+pre-release status. Breaking changes expected between v0.x releases.
+
+- Add comprehensive test suite for configuration system
+- Tests run without AWS/GitHub resources (24/24 passing)
+- Add VERSIONING.md explaining v0.x.x strategy
+- Update README with pre-1.0 warning badges
+- Update CHANGELOG with version reset notice
+- Remove old PR_DESCRIPTION.md
+
+* Release v0.6.0: Configuration system and version reset to pre-1.0 ([#12](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/12)) ([d423ef8](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/d423ef89653e4faf0a343a6b84db0d64e5c2fe86)), closes [#10](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/10) [#11](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/11) [#11](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/11)
+
+### Features
+
+* Add mode-based configuration system with YAML/JSON support ([#11](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/11)) ([101fe4e](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/101fe4e784652c07fdfcf95e6fba5efcab2d7b56))
+* Add test suite for config system and reset to v0.6.0 ([39baefb](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/39baefb16e6992cee0e84802ae05754a97ef4fb8)), closes [#11](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/11)
+* Add UI helper library for beautiful CLI experiences ([#10](https://github.com/damon-houk/aws-multi-account-bootstrap/issues/10)) ([dcb61b0](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/dcb61b087cb52a522e3df47ad345ad29c5c1906a))
+* Upgrade version requirements and overhaul prerequisite checker UX ([2da3c17](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/2da3c173a0772910989c728365e65978a50e953a))
+
+### Bug Fixes
+
+* Add GitHub CLI prerequisite checks to setup-complete-project.sh ([594a288](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/594a288d2b88287a537fe4973b07de37804105fa))
+* Remove .claude from version control and add to gitignore ([4c4a097](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/4c4a097b45244a633cdbf75ce279d9da7072fdca))
+* Remove nameref usage to pass ShellCheck CI ([df3bf88](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/df3bf88e9c27cec46a7d31fc7a6490396d5f75b3))
+
+### Code Refactoring
+
+* Eliminate duplicate prerequisite checking code ([5e50ba7](https://github.com/damon-houk/aws-multi-account-bootstrap/commit/5e50ba7ae6b5d4ec8aa3aa6e72ff460fbe1c49f2))
+
 ## IMPORTANT: Version Reset to v0.x.x
 
 As of October 2025, we are resetting the version from v1.5.0 to v0.6.0 to better reflect the project's pre-release status. Since there are no production users yet and the project is still in active development with frequent breaking changes expected, the v0.x.x versioning is more appropriate. See [VERSIONING.md](VERSIONING.md) for details.
