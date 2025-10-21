@@ -17,7 +17,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
@@ -26,7 +25,6 @@ NUM_ACCOUNTS=3
 USAGE_LEVEL="light"
 SELECTED_STACKS=""
 REGION="${AWS_DEFAULT_REGION:-us-east-2}"
-SHOW_BREAKDOWN=true
 
 # Available regions (common ones)
 REGIONS=(
@@ -143,7 +141,8 @@ change_usage_level() {
     local i=1
 
     for level in "${levels[@]}"; do
-        local desc=$(get_usage_level_description "$level")
+        local desc
+        desc=$(get_usage_level_description "$level")
         if [ "$level" == "$USAGE_LEVEL" ]; then
             echo -e "  ${GREEN}$i) ${BOLD}$level${NC}${GREEN} - $desc [current]${NC}"
         else
@@ -300,7 +299,8 @@ manage_stacks() {
 
 # Export current configuration
 export_config() {
-    local timestamp=$(date +"%Y%m%d_%H%M%S")
+    local timestamp
+    timestamp=$(date +"%Y%m%d_%H%M%S")
     local filename="aws_cost_estimate_${timestamp}.txt"
 
     echo -e "${YELLOW}Exporting current estimate to $filename...${NC}"

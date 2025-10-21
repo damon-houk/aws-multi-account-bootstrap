@@ -5,12 +5,16 @@
 # Optional: AWS CLI API (more accurate, requires credentials)
 
 # Colors for output (define before sourcing sub-scripts)
+# Only define colors used in this wrapper script
 YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
+# Export colors for sub-scripts
+export YELLOW
+export NC
+export GREEN='\033[0;32m'
+export BLUE='\033[0;34m'
+export CYAN='\033[0;36m'
+export RED='\033[0;31m'
 
 # Determine which method to use
 COST_ESTIMATOR_METHOD="${COST_ESTIMATOR_METHOD:-public}"

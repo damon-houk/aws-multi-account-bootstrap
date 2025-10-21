@@ -25,15 +25,18 @@ calculate_monthly_cost() {
     local base_costs=0
 
     # CloudWatch Alarms for billing (2 per account)
-    local alarm_cost=$(echo "$num_accounts * 2 * 0.10" | bc -l)
+    local alarm_cost
+    alarm_cost=$(echo "$num_accounts * 2 * 0.10" | bc -l)
     base_costs=$(echo "$base_costs + $alarm_cost" | bc -l)
 
     # CDK Bootstrap S3 buckets (minimal usage)
-    local s3_bootstrap_cost=$(echo "$num_accounts * 0.10" | bc -l)
+    local s3_bootstrap_cost
+    s3_bootstrap_cost=$(echo "$num_accounts * 0.10" | bc -l)
     base_costs=$(echo "$base_costs + $s3_bootstrap_cost" | bc -l)
 
     # ECR repositories (assuming minimal container storage)
-    local ecr_cost=$(echo "$num_accounts * 0.50" | bc -l)
+    local ecr_cost
+    ecr_cost=$(echo "$num_accounts * 0.50" | bc -l)
     base_costs=$(echo "$base_costs + $ecr_cost" | bc -l)
 
     # Variable costs based on usage level
@@ -58,7 +61,8 @@ calculate_monthly_cost() {
             ;;
     esac
 
-    local total_cost=$(echo "$base_costs + $variable_costs" | bc -l)
+    local total_cost
+    total_cost=$(echo "$base_costs + $variable_costs" | bc -l)
     echo "$total_cost"
 }
 
@@ -74,31 +78,35 @@ display_cost_breakdown() {
 
     if [ "$show_details" = true ]; then
         echo -e "${YELLOW}Base Infrastructure Costs:${NC}"
-        echo "  • CloudWatch Billing Alarms: $(format_currency $(echo "$num_accounts * 2 * 0.10" | bc -l))/month"
-        echo "  • CDK Bootstrap S3 Buckets:  $(format_currency $(echo "$num_accounts * 0.10" | bc -l))/month"
-        echo "  • ECR Container Registries:  $(format_currency $(echo "$num_accounts * 0.50" | bc -l))/month"
+        echo "  • CloudWatch Billing Alarms: $(format_currency "$(echo "$num_accounts * 2 * 0.10" | bc -l)")/month"
+        echo "  • CDK Bootstrap S3 Buckets:  $(format_currency "$(echo "$num_accounts * 0.10" | bc -l)")/month"
+        echo "  • ECR Container Registries:  $(format_currency "$(echo "$num_accounts * 0.50" | bc -l)")/month"
         echo ""
     fi
 
     echo -e "${YELLOW}Estimated Monthly Costs by Usage:${NC}"
 
-    local minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal")
-    local light_cost=$(calculate_monthly_cost "$num_accounts" "light")
-    local moderate_cost=$(calculate_monthly_cost "$num_accounts" "moderate")
-    local heavy_cost=$(calculate_monthly_cost "$num_accounts" "heavy")
+    local minimal_cost
+    local light_cost
+    local moderate_cost
+    local heavy_cost
+    minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal")
+    light_cost=$(calculate_monthly_cost "$num_accounts" "light")
+    moderate_cost=$(calculate_monthly_cost "$num_accounts" "moderate")
+    heavy_cost=$(calculate_monthly_cost "$num_accounts" "heavy")
 
     echo ""
     echo "  🌱 ${GREEN}Minimal Usage${NC} (staying in free tier):"
-    echo "     $(format_currency "$minimal_cost") - $(format_currency $(echo "$minimal_cost + 3" | bc -l))/month"
+    echo "     $(format_currency "$minimal_cost") - $(format_currency "$(echo "$minimal_cost + 3" | bc -l)")/month"
     echo ""
     echo "  💡 ${BLUE}Light Development${NC} (occasional testing):"
-    echo "     $(format_currency "$light_cost") - $(format_currency $(echo "$light_cost + 10" | bc -l))/month"
+    echo "     $(format_currency "$light_cost") - $(format_currency "$(echo "$light_cost + 10" | bc -l)")/month"
     echo ""
     echo "  🚀 ${CYAN}Active Development${NC} (daily deployments):"
-    echo "     $(format_currency "$moderate_cost") - $(format_currency $(echo "$moderate_cost + 15" | bc -l))/month"
+    echo "     $(format_currency "$moderate_cost") - $(format_currency "$(echo "$moderate_cost + 15" | bc -l)")/month"
     echo ""
     echo "  ⚡ ${YELLOW}Production Workload${NC} (24/7 services):"
-    echo "     $(format_currency "$heavy_cost") - $(format_currency $(echo "$heavy_cost + 50" | bc -l))/month+"
+    echo "     $(format_currency "$heavy_cost") - $(format_currency "$(echo "$heavy_cost + 50" | bc -l)")/month+"
     echo ""
 
     echo -e "${GREEN}💡 Cost Optimization Tips:${NC}"
@@ -112,8 +120,10 @@ display_cost_breakdown() {
 # Function for inline cost estimate (single line)
 display_inline_cost() {
     local num_accounts=${1:-3}
-    local minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal")
-    local light_cost=$(calculate_monthly_cost "$num_accounts" "light")
+    local minimal_cost
+    local light_cost
+    minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal")
+    light_cost=$(calculate_monthly_cost "$num_accounts" "light")
 
     echo -e "${YELLOW}💰 Estimated monthly cost:${NC} $(format_currency "$minimal_cost")-$(format_currency "$light_cost") for development, <\$50 for production"
 }
@@ -124,7 +134,7 @@ display_dry_run_costs() {
 
     echo -e "${YELLOW}[DRY RUN] Estimated monthly AWS costs after setup:${NC}"
     echo ""
-    echo "  Infrastructure baseline: ~$(format_currency $(calculate_monthly_cost "$num_accounts" "minimal"))/month"
+    echo "  Infrastructure baseline: ~$(format_currency "$(calculate_monthly_cost "$num_accounts" "minimal")")/month"
     echo "  • CloudWatch billing alarms: \$0.60"
     echo "  • CDK bootstrap resources: \$0.30"
     echo "  • ECR repositories: \$1.50"
@@ -139,6 +149,8 @@ display_dry_run_costs() {
 # Calculate base infrastructure costs (for compatibility)
 calculate_base_costs() {
     local num_accounts="$1"
+    # Region parameter kept for interface compatibility but not used in this implementation
+    # shellcheck disable=SC2034
     local region="${2:-us-east-2}"
     local usage_level="${3:-light}"
 

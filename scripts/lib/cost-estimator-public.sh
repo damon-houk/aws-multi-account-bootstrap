@@ -9,7 +9,6 @@ YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Configuration
@@ -62,7 +61,7 @@ download_pricing_data() {
     echo -e "${YELLOW}Fetching latest pricing data for ${service}...${NC}" >&2
     pricing_data=$(curl -s "$url" 2>/dev/null)
 
-    if [ $? -eq 0 ] && [ -n "$pricing_data" ]; then
+    if [ -n "$pricing_data" ]; then
         echo "$pricing_data" > "$cache_file"
         echo "$pricing_data"
     else
@@ -115,8 +114,10 @@ calculate_base_costs() {
     local usage_level="$3"
 
     # Get current prices
-    local alarm_price=$(lookup_aws_price "AmazonCloudWatch" "Alarm" "$region" "AlarmMonitorUsage")
-    local config_price=$(lookup_aws_price "AWSConfig" "Management Tools - AWS Config Rules" "$region" "ConfigRule")
+    local alarm_price
+    local config_price
+    alarm_price=$(lookup_aws_price "AmazonCloudWatch" "Alarm" "$region" "AlarmMonitorUsage")
+    config_price=$(lookup_aws_price "AWSConfig" "Management Tools - AWS Config Rules" "$region" "ConfigRule")
 
     # Convert to numbers (handle empty/null values)
     alarm_price=${alarm_price:-0}
@@ -149,8 +150,10 @@ calculate_base_costs() {
     local total_config_rules=$((num_accounts * config_rules_per_account))
 
     # Use awk for floating point math (more portable than bc)
-    local alarm_cost=$(awk "BEGIN {printf \"%.2f\", $alarm_price * $total_alarms}")
-    local config_cost=$(awk "BEGIN {printf \"%.2f\", $config_price * $total_config_rules}")
+    local alarm_cost
+    local config_cost
+    alarm_cost=$(awk "BEGIN {printf \"%.2f\", $alarm_price * $total_alarms}")
+    config_cost=$(awk "BEGIN {printf \"%.2f\", $config_price * $total_config_rules}")
 
     awk "BEGIN {printf \"%.2f\", $alarm_cost + $config_cost}"
 }
@@ -301,7 +304,7 @@ format_currency() {
 # Display comprehensive cost breakdown
 display_cost_breakdown() {
     local num_accounts="${1:-3}"
-    local show_details="${2:-true}"
+    # Parameter 2 reserved for backward compatibility but not used
     local additional_stacks="${3:-}"
     local region="${4:-$(get_pricing_region)}"
     local usage_level="${5:-light}"
@@ -321,19 +324,22 @@ display_cost_breakdown() {
     # Show comparison across all usage levels
     echo -e "${BLUE}Cost Comparison Across Usage Levels:${NC}"
     for level in minimal light moderate heavy; do
-        local level_base=$(calculate_base_costs "$num_accounts" "$region" "$level")
+        local level_base
+        level_base=$(calculate_base_costs "$num_accounts" "$region" "$level")
         local level_total=$level_base
 
         if [ -n "$additional_stacks" ]; then
             IFS=',' read -ra STACKS <<< "$additional_stacks"
             for stack in "${STACKS[@]}"; do
                 stack=$(echo "$stack" | xargs)
-                local stack_cost=$(estimate_stack_cost "$stack" "$region" "$level")
+                local stack_cost
+                stack_cost=$(estimate_stack_cost "$stack" "$region" "$level")
                 level_total=$(awk "BEGIN {printf \"%.2f\", $level_total + $stack_cost}")
             done
         fi
 
-        local level_desc=$(get_usage_level_description "$level")
+        local level_desc
+        level_desc=$(get_usage_level_description "$level")
         if [ "$level" == "$usage_level" ]; then
             echo -e "  ${GREEN}→ $level: $(format_currency "$level_total")/month${NC} - $level_desc"
         else
@@ -346,11 +352,14 @@ display_cost_breakdown() {
     echo -e "${BLUE}Detailed Breakdown for ${GREEN}${usage_level}${BLUE} usage:${NC}"
 
     # Base infrastructure costs
-    local base_cost=$(calculate_base_costs "$num_accounts" "$region" "$usage_level")
+    local base_cost
+    base_cost=$(calculate_base_costs "$num_accounts" "$region" "$usage_level")
 
     # Get individual component costs
-    local alarm_price=$(lookup_aws_price "AmazonCloudWatch" "Alarm" "$region" "AlarmMonitorUsage")
-    local config_price=$(lookup_aws_price "AWSConfig" "Management Tools - AWS Config Rules" "$region" "ConfigRule")
+    local alarm_price
+    local config_price
+    alarm_price=$(lookup_aws_price "AmazonCloudWatch" "Alarm" "$region" "AlarmMonitorUsage")
+    config_price=$(lookup_aws_price "AWSConfig" "Management Tools - AWS Config Rules" "$region" "ConfigRule")
 
     alarm_price=${alarm_price:-0}
     config_price=${config_price:-0}
@@ -381,8 +390,10 @@ display_cost_breakdown() {
     local total_alarms=$((num_accounts * alarms_per_account))
     local total_config_rules=$((num_accounts * config_rules_per_account))
 
-    local alarm_cost=$(awk "BEGIN {printf \"%.2f\", $alarm_price * $total_alarms}")
-    local config_cost=$(awk "BEGIN {printf \"%.2f\", $config_price * $total_config_rules}")
+    local alarm_cost
+    local config_cost
+    alarm_cost=$(awk "BEGIN {printf \"%.2f\", $alarm_price * $total_alarms}")
+    config_cost=$(awk "BEGIN {printf \"%.2f\", $config_price * $total_config_rules}")
 
     echo "  Base Infrastructure:"
     echo "    • CloudWatch Alarms ($total_alarms @ \$$alarm_price): $(format_currency "$alarm_cost")/month"
@@ -401,7 +412,8 @@ display_cost_breakdown() {
         IFS=',' read -ra STACKS <<< "$additional_stacks"
         for stack in "${STACKS[@]}"; do
             stack=$(echo "$stack" | xargs)  # Trim whitespace
-            local stack_cost=$(estimate_stack_cost "$stack" "$region" "$usage_level")
+            local stack_cost
+            stack_cost=$(estimate_stack_cost "$stack" "$region" "$usage_level")
             total_cost=$(awk "BEGIN {printf \"%.2f\", $total_cost + $stack_cost}")
 
             # Add details for each stack type
@@ -468,7 +480,8 @@ display_inline_cost() {
     local region="${2:-$(get_pricing_region)}"
 
     init_pricing_cache
-    local monthly_cost=$(calculate_base_costs "$num_accounts" "$region" "light")
+    local monthly_cost
+    monthly_cost=$(calculate_base_costs "$num_accounts" "$region" "light")
     echo -e "${YELLOW}💰 Estimated monthly cost: $(format_currency "$monthly_cost") (base infrastructure only)${NC}"
 }
 
@@ -493,10 +506,14 @@ display_dry_run_costs() {
     echo ""
 
     # Get costs for different usage levels
-    local minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal" "$region")
-    local light_cost=$(calculate_monthly_cost "$num_accounts" "light" "$region")
-    local moderate_cost=$(calculate_monthly_cost "$num_accounts" "moderate" "$region")
-    local heavy_cost=$(calculate_monthly_cost "$num_accounts" "heavy" "$region")
+    local minimal_cost
+    local light_cost
+    local moderate_cost
+    local heavy_cost
+    minimal_cost=$(calculate_monthly_cost "$num_accounts" "minimal" "$region")
+    light_cost=$(calculate_monthly_cost "$num_accounts" "light" "$region")
+    moderate_cost=$(calculate_monthly_cost "$num_accounts" "moderate" "$region")
+    heavy_cost=$(calculate_monthly_cost "$num_accounts" "heavy" "$region")
 
     # Format as numbers if they're empty
     minimal_cost=${minimal_cost:-0.60}
