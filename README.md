@@ -195,6 +195,42 @@ Configures billing alerts for each account:
 
 ---
 
+## 📦 AWS Template Browser
+
+Browse, search, and analyze AWS CloudFormation templates from official repositories:
+
+```bash
+# Interactive template browser
+./scripts/browse-templates.sh
+
+# Search for specific templates
+./scripts/browse-templates.sh --search wordpress
+
+# Browse by category
+./scripts/browse-templates.sh --category database --json
+
+# Analyze a template for resources
+./scripts/browse-templates.sh --analyze WordPress_Single_Instance.template
+
+# Estimate template costs
+./scripts/browse-templates.sh --estimate RDS_MySQL_With_Read_Replica.template
+
+# Start API server for web frontends
+./scripts/template-api-server.sh --port 8080
+```
+
+The template browser provides:
+- 🔍 **Search & Filter** - Find templates by keyword or category
+- 📊 **Template Analysis** - See resources and services used
+- 💰 **Cost Estimation** - Get cost estimates for template deployments
+- 🌐 **RESTful API** - Integrate with web frontends and other tools
+- 📚 **200+ Templates** - Access AWS's entire template library
+- 🚀 **Quick Starts** - Browse production-ready reference architectures
+
+See [docs/TEMPLATE_BROWSER.md](docs/TEMPLATE_BROWSER.md) for detailed documentation.
+
+---
+
 ## 💰 Cost Estimation
 
 Get accurate, up-to-date AWS cost estimates before you start:
