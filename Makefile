@@ -21,8 +21,12 @@ help: ## Show this help message
 	@echo '  REPO_NAME     - GitHub repository name'
 	@echo '  EMAIL         - Email for billing alerts (optional, defaults to EMAIL_PREFIX@gmail.com)'
 	@echo ''
+	@echo 'Optional Variables:'
+	@echo '  DRY_RUN       - Set to true to preview without creating resources'
+	@echo ''
 	@echo 'Examples:'
 	@echo '  make setup-all PROJECT_CODE=TPA EMAIL_PREFIX=damon.o.houk OU_ID=ou-813y-xxx GITHUB_ORG=myorg REPO_NAME=myrepo'
+	@echo '  make setup-all PROJECT_CODE=TPA EMAIL_PREFIX=damon.o.houk OU_ID=ou-813y-xxx GITHUB_ORG=myorg REPO_NAME=myrepo DRY_RUN=true'
 	@echo '  make create-accounts PROJECT_CODE=TPA EMAIL_PREFIX=damon.o.houk OU_ID=ou-813y-xxx'
 	@echo '  make bootstrap PROJECT_CODE=TPA'
 	@echo ''
@@ -41,37 +45,41 @@ check-all-vars: check-vars ## Check all variables including GitHub
 .PHONY: make-executable
 make-executable: ## Make all scripts executable
 	@echo "Making scripts executable..."
-	@chmod +x *.sh 2>/dev/null || true
+	@chmod +x scripts/*.sh 2>/dev/null || true
 	@echo "✓ Done"
 
 .PHONY: create-accounts
 create-accounts: check-vars make-executable ## Create AWS accounts (requires OU_ID)
 	@if [ -z "$(OU_ID)" ]; then echo "ERROR: OU_ID is required"; exit 1; fi
-	@./create-project-accounts.sh $(PROJECT_CODE) $(EMAIL_PREFIX) $(OU_ID)
+	@./scripts/create-project-accounts.sh $(PROJECT_CODE) $(EMAIL_PREFIX) $(OU_ID)
 
 .PHONY: bootstrap
 bootstrap: check-vars make-executable ## Bootstrap CDK in all accounts
-	@./bootstrap-cdk.sh $(PROJECT_CODE)
+	@./scripts/bootstrap-cdk.sh $(PROJECT_CODE)
 
 .PHONY: setup-cicd
 setup-cicd: check-all-vars make-executable ## Set up GitHub Actions CI/CD
-	@./setup-github-cicd.sh $(PROJECT_CODE) $(GITHUB_ORG) $(REPO_NAME)
+	@./scripts/setup-github-cicd.sh $(PROJECT_CODE) $(GITHUB_ORG) $(REPO_NAME)
 
 .PHONY: setup-github
 setup-github: check-all-vars make-executable ## Create and configure GitHub repository
-	@./setup-github-repo.sh $(PROJECT_CODE) $(GITHUB_ORG) $(REPO_NAME)
+	@./scripts/setup-github-repo.sh $(PROJECT_CODE) $(GITHUB_ORG) $(REPO_NAME)
 
 .PHONY: setup-billing
 setup-billing: check-vars make-executable ## Set up billing alerts and budgets
 	@if [ -z "$(EMAIL)" ]; then \
-		./setup-billing-alerts.sh $(PROJECT_CODE); \
+		./scripts/setup-billing-alerts.sh $(PROJECT_CODE); \
 	else \
-		./setup-billing-alerts.sh $(PROJECT_CODE) $(EMAIL); \
+		./scripts/setup-billing-alerts.sh $(PROJECT_CODE) $(EMAIL); \
 	fi
 
 .PHONY: setup-all
 setup-all: check-all-vars make-executable ## Complete setup (accounts + CDK + CI/CD + GitHub + billing)
-	@./setup-complete-project.sh $(PROJECT_CODE) $(EMAIL_PREFIX) $(OU_ID) $(GITHUB_ORG) $(REPO_NAME)
+	@if [ "$(DRY_RUN)" = "true" ]; then \
+		./scripts/setup-complete-project.sh $(PROJECT_CODE) $(EMAIL_PREFIX) $(OU_ID) $(GITHUB_ORG) $(REPO_NAME) --dry-run; \
+	else \
+		./scripts/setup-complete-project.sh $(PROJECT_CODE) $(EMAIL_PREFIX) $(OU_ID) $(GITHUB_ORG) $(REPO_NAME); \
+	fi
 
 .PHONY: install
 install: ## Install npm dependencies

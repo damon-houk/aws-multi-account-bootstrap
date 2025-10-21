@@ -23,6 +23,8 @@ In **one command**, this tool sets up:
 - ✅ **CI/CD Pipeline** with GitHub Actions (OIDC, no credentials stored)
 - ✅ **Semantic Versioning** with automated releases
 - ✅ **Billing Alerts** ($15 alert, $25 budget per account)
+- ✅ **Cost Estimation** with real-time AWS pricing
+- ✅ **Dry-Run Mode** preview before creating resources
 - ✅ **Complete Documentation** auto-generated for your project
 
 **Before:** Days of manual AWS console clicking, YAML editing, and documentation writing.
@@ -68,7 +70,16 @@ You need:
 ```bash
 # 1. Create an OU in AWS Console, get its ID (ou-xxxx-xxxxxxxx)
 
-# 2. Run the setup
+# 2. Preview what will be created (dry-run mode)
+make setup-all \
+  PROJECT_CODE=MYP \
+  EMAIL_PREFIX=your.email \
+  OU_ID=ou-xxxx-xxxxxxxx \
+  GITHUB_ORG=your-github-username \
+  REPO_NAME=my-project \
+  DRY_RUN=true
+
+# 3. Run the actual setup (remove DRY_RUN=true)
 make setup-all \
   PROJECT_CODE=MYP \
   EMAIL_PREFIX=your.email \
@@ -183,6 +194,63 @@ Configures billing alerts for each account:
 ```
 
 ---
+
+## 💰 Cost Estimation
+
+Get accurate, up-to-date AWS cost estimates before you start:
+
+```bash
+# Interactive mode - explore different scenarios easily
+./scripts/estimate-costs.sh --interactive
+
+# Command-line mode (uses public API, no credentials needed)
+./scripts/estimate-costs.sh
+
+# Estimate with additional services
+./scripts/estimate-costs.sh --stacks api-lambda,static-website,rds-postgres
+
+# Estimate for different regions
+./scripts/estimate-costs.sh --region eu-west-1
+
+# Use more accounts or different usage levels
+./scripts/estimate-costs.sh --accounts 5 --usage moderate
+
+# See detailed usage level definitions
+./scripts/estimate-costs.sh --explain-usage
+
+# List available stack types
+./scripts/estimate-costs.sh --list-stacks
+```
+
+### Interactive Mode
+
+The interactive cost estimator provides a user-friendly menu system to:
+- 🔄 Dynamically adjust number of accounts, regions, and usage levels
+- 📊 See real-time cost updates as you make changes
+- 🏗️ Toggle additional services on/off to see their impact
+- 💾 Export estimates to file for documentation
+- 🎯 Compare costs across all usage levels simultaneously
+
+### Pricing Methods
+
+The estimator supports two methods:
+
+1. **Public API (default)** - No AWS credentials required
+   - Uses AWS public Bulk Pricing API
+   - Real-time pricing data from AWS
+   - Works without any setup
+   - Default region: `us-east-2` (Ohio)
+
+2. **AWS CLI Method** - Optional, more detailed
+   - Requires AWS credentials configured
+   - May provide additional pricing details
+   - Enable with: `--method aws-cli`
+
+The estimator includes:
+- Base infrastructure costs (CloudWatch, S3, ECR)
+- Usage-based estimates (minimal, light, moderate, heavy)
+- Additional stack costs (API Gateway, Lambda, RDS, etc.)
+- Region-specific pricing
 
 ## 📋 Usage Examples
 

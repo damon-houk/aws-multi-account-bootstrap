@@ -16,6 +16,18 @@ The AWS Multi-Account Bootstrap tool supports flexible configuration through mul
 
 ## Quick Start
 
+### Dry-Run Mode (Preview)
+
+Preview what will be created without making any changes:
+
+```bash
+# Using make
+make setup-all PROJECT_CODE=MYP EMAIL_PREFIX=your.email OU_ID=ou-xxx GITHUB_ORG=username REPO_NAME=repo DRY_RUN=true
+
+# Or directly with the script
+./scripts/setup-complete-project.sh MYP your.email ou-xxx username repo --dry-run
+```
+
 ### Interactive Mode (Default)
 
 Run the setup wizard that prompts for missing values:
