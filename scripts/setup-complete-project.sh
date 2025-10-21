@@ -19,14 +19,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/config-manager.sh
 source "$SCRIPT_DIR/lib/config-manager.sh"
 
-# Source cost estimator (v2 with AWS Pricing API support)
-# shellcheck source=scripts/lib/cost-estimator-v2.sh
-if [ -f "$SCRIPT_DIR/lib/cost-estimator-v2.sh" ]; then
-    source "$SCRIPT_DIR/lib/cost-estimator-v2.sh"
-else
-    # Fallback to original estimator
-    source "$SCRIPT_DIR/lib/cost-estimator.sh"
-fi
+# Source cost estimator (with AWS Pricing API support)
+# shellcheck source=scripts/lib/cost-estimator.sh
+source "$SCRIPT_DIR/lib/cost-estimator.sh" 2>/dev/null || source "$(dirname "$0")/lib/cost-estimator.sh"
 
 # Colors for output
 RED='\033[0;31m'

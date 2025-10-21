@@ -14,18 +14,20 @@
 
 set -e
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get script directory (save it before sourcing other scripts)
+MAIN_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$MAIN_SCRIPT_DIR"
 
 # Source the cost estimator
-source "$SCRIPT_DIR/lib/cost-estimator-v2.sh"
+source "$SCRIPT_DIR/lib/cost-estimator.sh"
 
 # Default values
 NUM_ACCOUNTS=3
 USAGE_LEVEL="light"
 STACKS=""
-REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+REGION="${AWS_DEFAULT_REGION:-us-east-2}"
 UPDATE_CACHE=false
+PRICING_METHOD="${COST_ESTIMATOR_METHOD:-public}"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -48,12 +50,25 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --list-stacks)
-            display_stack_options
+            list_available_stacks
+            exit 0
+            ;;
+        --explain-usage)
+            explain_usage_levels
             exit 0
             ;;
         --update-cache)
             UPDATE_CACHE=true
             shift
+            ;;
+        --method)
+            PRICING_METHOD="$2"
+            export COST_ESTIMATOR_METHOD="$PRICING_METHOD"
+            shift 2
+            ;;
+        --interactive|-i)
+            # Launch interactive mode
+            exec "$MAIN_SCRIPT_DIR/estimate-costs-interactive.sh"
             ;;
         --help|-h)
             echo "AWS Multi-Account Bootstrap - Cost Estimator"
@@ -61,16 +76,20 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
+            echo "  --interactive, -i    Launch interactive mode"
             echo "  --accounts NUM       Number of AWS accounts (default: 3)"
             echo "  --usage LEVEL        Usage level: minimal, light, moderate, heavy (default: light)"
             echo "  --stacks STACKS      Comma-separated list of stack types to estimate"
-            echo "  --region REGION      AWS region (default: us-east-1)"
+            echo "  --region REGION      AWS region (default: us-east-2)"
             echo "  --list-stacks        List available stack types"
+            echo "  --explain-usage      Show detailed usage level definitions"
             echo "  --update-cache       Force update pricing cache"
+            echo "  --method METHOD      Pricing method: public, aws-cli, auto (default: public)"
             echo "  --help               Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0"
+            echo "  $0 --interactive              # Launch interactive mode"
+            echo "  $0                            # Basic estimate with defaults"
             echo "  $0 --accounts 3 --usage moderate"
             echo "  $0 --stacks api-lambda,static-website"
             echo "  $0 --region eu-west-1 --accounts 5"
@@ -94,7 +113,7 @@ if [ "$UPDATE_CACHE" = true ]; then
 fi
 
 # Display the cost breakdown
-display_cost_breakdown_real "$NUM_ACCOUNTS" true "$STACKS"
+display_cost_breakdown "$NUM_ACCOUNTS" true "$STACKS" "$REGION" "$USAGE_LEVEL"
 
 # Show how to customize
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

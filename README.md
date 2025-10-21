@@ -200,20 +200,53 @@ Configures billing alerts for each account:
 Get accurate, up-to-date AWS cost estimates before you start:
 
 ```bash
-# Estimate costs for the basic setup
+# Interactive mode - explore different scenarios easily
+./scripts/estimate-costs.sh --interactive
+
+# Command-line mode (uses public API, no credentials needed)
 ./scripts/estimate-costs.sh
 
 # Estimate with additional services
-./scripts/estimate-costs.sh --stacks api-lambda,static-website
+./scripts/estimate-costs.sh --stacks api-lambda,static-website,rds-postgres
 
 # Estimate for different regions
 ./scripts/estimate-costs.sh --region eu-west-1
+
+# Use more accounts or different usage levels
+./scripts/estimate-costs.sh --accounts 5 --usage moderate
+
+# See detailed usage level definitions
+./scripts/estimate-costs.sh --explain-usage
 
 # List available stack types
 ./scripts/estimate-costs.sh --list-stacks
 ```
 
-The estimator uses the **AWS Pricing API** for real-time pricing and includes:
+### Interactive Mode
+
+The interactive cost estimator provides a user-friendly menu system to:
+- 🔄 Dynamically adjust number of accounts, regions, and usage levels
+- 📊 See real-time cost updates as you make changes
+- 🏗️ Toggle additional services on/off to see their impact
+- 💾 Export estimates to file for documentation
+- 🎯 Compare costs across all usage levels simultaneously
+
+### Pricing Methods
+
+The estimator supports two methods:
+
+1. **Public API (default)** - No AWS credentials required
+   - Uses AWS public Bulk Pricing API
+   - Real-time pricing data from AWS
+   - Works without any setup
+   - Default region: `us-east-2` (Ohio)
+
+2. **AWS CLI Method** - Optional, more detailed
+   - Requires AWS credentials configured
+   - May provide additional pricing details
+   - Enable with: `--method aws-cli`
+
+The estimator includes:
 - Base infrastructure costs (CloudWatch, S3, ECR)
 - Usage-based estimates (minimal, light, moderate, heavy)
 - Additional stack costs (API Gateway, Lambda, RDS, etc.)
