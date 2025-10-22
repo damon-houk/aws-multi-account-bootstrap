@@ -53,6 +53,30 @@ dev-go: ## Quick Go development workflow (fmt, vet, test)
 fmt-go: ## Format Go code
 	@cd go && make fmt
 
+# Pre-push checks (run BEFORE pushing!)
+pre-push: check-structure check-links test ## Run all checks before pushing
+
+check-structure: ## Validate monorepo structure
+	@echo "Checking monorepo structure..."
+	@bash -c '\
+		for file in README.md LICENSE Makefile CLAUDE.md; do \
+			[ -f "$$file" ] && echo "✅ $$file" || (echo "❌ Missing: $$file" && exit 1); \
+		done; \
+		for file in bash/README.md bash/scripts/setup-complete-project.sh go/README.md go/Makefile go/go.mod; do \
+			[ -f "$$file" ] && echo "✅ $$file" || (echo "❌ Missing: $$file" && exit 1); \
+		done; \
+		echo "✅ Structure validated"'
+
+check-links: ## Check markdown links (requires: npm install -g markdown-link-check)
+	@echo "Checking markdown links..."
+	@if command -v markdown-link-check >/dev/null 2>&1; then \
+		find . -name '*.md' -not -path './node_modules/*' -not -path './.git/*' \
+		  -exec markdown-link-check {} --config .github/markdown-link-check-config.json \; ; \
+	else \
+		echo "⚠️  markdown-link-check not installed. Install: npm install -g markdown-link-check"; \
+		exit 1; \
+	fi
+
 # CI
 ci: test build ## Full CI workflow (test + build)
 
