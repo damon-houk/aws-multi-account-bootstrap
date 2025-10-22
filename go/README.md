@@ -36,8 +36,7 @@ go/
 │   └── adapters/          # Implementations
 │       ├── aws/           # Real AWS SDK adapter (TODO)
 │       └── mock/          # Test doubles
-├── pkg/                   # Public libraries
-└── api/                   # API definitions
+└── pkg/                   # Public libraries
 ```
 
 ### Key Design Decisions

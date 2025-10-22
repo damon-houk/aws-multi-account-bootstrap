@@ -107,7 +107,7 @@ In **one command**, this tool sets up:
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git
+git clone https://github.com/damon-houk/aws-multi-account-bootstrap.git
 cd aws-multi-account-bootstrap
 
 # Build the CLI
@@ -136,7 +136,7 @@ make build
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git
+git clone https://github.com/damon-houk/aws-multi-account-bootstrap.git
 cd aws-multi-account-bootstrap/bash
 
 # Check prerequisites
@@ -392,8 +392,8 @@ Apache License 2.0 - see [LICENSE](./LICENSE) for details
 
 ## 💬 Support
 
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap/discussions)
+- **Issues**: [GitHub Issues](https://github.com/damon-houk/aws-multi-account-bootstrap/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/damon-houk/aws-multi-account-bootstrap/discussions)
 
 ---
 
