@@ -380,7 +380,7 @@ We welcome contributions! See [CONTRIBUTING.md](./bash/CONTRIBUTING.md) for guid
 - **v2 (Go)**: [go/README.md](./go/README.md) *(coming soon)*
 - **Architecture**: [docs/architecture/](./docs/architecture/) *(coming soon)*
 - **Migration**: [docs/migration/BASH_TO_GO.md](./docs/migration/) *(coming soon)*
-- **API Docs**: [go/api/README.md](./go/api/) *(coming soon)*
+- **API Docs**: Coming soon in `go/api/`
 
 ---
 
