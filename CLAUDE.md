@@ -271,23 +271,30 @@ Creates a production-ready AWS infrastructure:
 
 ### v2 (Go) - In Progress 🚧
 
-**Phase 1: Repository Restructuring** *(current)*
+**Phase 1: Repository Restructuring** *(completed)*
 - ✅ Move bash to `bash/` subdirectory
 - ✅ Create monorepo structure
 - ✅ Set up package.json, turbo.json
 - ✅ Update README.md and CLAUDE.md
-- 🚧 Commit restructuring
-- 📅 Initialize Go module
+- ✅ Commit restructuring
+- ✅ Initialize Go module
 
-**Phase 2: Go Foundation** *(next - Week 1)*
-- 📅 Create Go port interfaces
-- 📅 Port domain logic (account module)
-- 📅 Create mock adapters
-- 📅 Write tests
-- 📅 Build basic CLI
+**Phase 2: Go Foundation** *(completed)*
+- ✅ Create Go port interfaces
+- ✅ Port domain logic (account module)
+- ✅ Create mock adapters
+- ✅ Write tests
+- 🚧 Build basic CLI (in progress)
 
-**Phase 3: Real Adapters** *(Week 2)*
-- 📅 Port AWS adapters to Go
+**Phase 3: Real Adapters** *(current - Week 2)*
+- ✅ Port AWS adapters to Go (completed 2025-10-22)
+  - ✅ AWS Organizations (account creation, management)
+  - ✅ AWS IAM (OIDC providers, GitHub Actions roles)
+  - ✅ AWS STS (role assumption, caller identity)
+  - ✅ AWS Budgets (cost management)
+  - ✅ AWS CloudWatch (billing alarms)
+  - ✅ AWS SNS (notifications)
+  - ✅ AWS CDK (bootstrap)
 - 📅 Port GitHub adapters to Go
 - 📅 Integration tests
 
@@ -508,6 +515,6 @@ See main [README.md](./README.md) for detailed roadmap.
 
 ---
 
-Last updated: 2025-10-22 (Monorepo restructuring complete, starting v2 Go development)
+Last updated: 2025-10-22 (AWS adapter implementation complete for Go v2)
 
 AI: Claude Code
