@@ -139,11 +139,10 @@ make build
 ```
 
 **Status**: Active development
-- 🚧 Porting domain logic from bash
-- 🚧 Creating Go adapters
-- 📅 Building CLI with TUI
-- 📅 Creating API server
-- 📅 Building frontends
+- ✅ Go adapters complete (AWS + GitHub)
+- 🚧 Building CLI with Bubbletea TUI
+- 📅 Porting remaining domain logic from bash
+- 📅 Single binary distribution
 
 ### Working on Frontends (Future)
 
@@ -272,7 +271,6 @@ Creates a production-ready AWS infrastructure:
 - ✅ Port domain logic (account module)
 - ✅ Create mock adapters
 - ✅ Write tests
-- 🚧 Build basic CLI (in progress)
 
 **Phase 3: Real Adapters** *(completed)*
 - ✅ Port AWS adapters to Go (completed 2025-10-22)
@@ -294,16 +292,29 @@ Creates a production-ready AWS infrastructure:
   - ✅ Releases (create releases and tags)
 - 📅 Integration tests
 
-**Phase 4: API Server** *(Week 3)*
-- 📅 Create OpenAPI spec
-- 📅 Build REST API server
-- 📅 Generate TypeScript client
+**Phase 4: CLI with TUI** *(current - starting)*
+- 📅 Create CLI structure with Cobra
+- 📅 Implement Bubbletea TUI
+  - Interactive setup wizard
+  - Progress indicators and spinners
+  - Beautiful terminal output
+  - Cost estimation display
+- 📅 Configuration management with Viper
+- 📅 JSON output mode for CI/CD
+- 📅 Single binary distribution
+- 📅 Shell completions (bash, zsh, fish)
 
-**Phase 5: Frontends** *(Week 4+)*
-- 📅 CLI with Bubbletea TUI
-- 📅 Web dashboard (React)
-- 📅 Mobile apps (React Native)
-- 📅 Desktop app (Wails)
+**Phase 5: Polish & Release** *(future)*
+- 📅 Comprehensive documentation
+- 📅 Video tutorials
+- 📅 GitHub Actions for releases
+- 📅 Homebrew formula
+- 📅 v2.0.0 stable release
+
+**Future Considerations** *(optional, based on demand)*
+- Desktop app (Wails) - local GUI, no server needed
+- Template marketplace for common setups
+- Cost dashboards and visualizations
 
 ---
 
@@ -407,11 +418,11 @@ make pre-push
 - **Distribution**: Git clone + run scripts
 
 ### v2 (Go)
-- **Backend**: Go 1.21+
-- **AWS**: AWS SDK for Go v2
-- **GitHub**: go-github
-- **CLI**: cobra (commands), viper (config), bubbletea (TUI)
-- **API**: Standard library net/http or fiber
+- **Language**: Go 1.21+
+- **AWS SDK**: AWS SDK for Go v2
+- **GitHub SDK**: go-github/v67
+- **CLI Framework**: cobra (commands), viper (config), bubbletea (TUI)
+- **Distribution**: Single binary, cross-platform
 - **Testing**: Go test + testify
 
 ### Frontends (v2) - Future
@@ -511,6 +522,6 @@ See main [README.md](./README.md) for detailed roadmap.
 
 ---
 
-Last updated: 2025-10-22 (GitHub adapter implementation complete for Go v2 - Phase 3 complete)
+Last updated: 2025-10-22 (Roadmap updated - focusing on CLI/TUI, no API server)
 
 AI: Claude Code
