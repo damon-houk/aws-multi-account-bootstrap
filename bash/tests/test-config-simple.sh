@@ -73,7 +73,8 @@ parse_config_value() {
     case "$config_file" in
         *.yml|*.yaml)
             if command -v yq &> /dev/null; then
-                yq eval ".${key} // empty" "$config_file" 2>/dev/null || echo ""
+                # yq v4 syntax (mikefarah/yq)
+                yq eval ".${key}" "$config_file" 2>/dev/null | grep -v "^null$" || echo ""
             else
                 echo ""
             fi
