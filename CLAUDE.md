@@ -126,7 +126,7 @@ make check-prerequisites
 cd go
 
 # Initialize (first time)
-go mod init github.com/YOUR_USERNAME/aws-multi-account-bootstrap/v2
+go mod init github.com/damon-houk/aws-multi-account-bootstrap/v2
 go mod download
 
 # Run tests

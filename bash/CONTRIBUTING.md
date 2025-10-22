@@ -32,7 +32,7 @@ This project follows the [Contributor Covenant Code of Conduct](https://www.cont
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git
+   git clone https://github.com/damon-houk/aws-multi-account-bootstrap.git
    cd aws-multi-account-bootstrap
    ```
 
