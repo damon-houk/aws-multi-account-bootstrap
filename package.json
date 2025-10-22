@@ -5,7 +5,7 @@
   "description": "AWS multi-account setup with Go backend + multi-platform frontends",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git"
+    "url": "https://github.com/damon-houk/aws-multi-account-bootstrap.git"
   },
   "workspaces": [
     "apps/*",
