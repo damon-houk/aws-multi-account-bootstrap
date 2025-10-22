@@ -5,8 +5,8 @@
 ## Project Overview
 
 AWS infrastructure automation tool that creates a production-ready multi-account setup with CI/CD in one command.
-- **Version**: v0.6.0 (pre-1.0, breaking changes expected)
-- **Status**: Active development, no production users yet
+- **Version**: v0.7.0-alpha (pre-1.0, breaking changes expected)
+- **Status**: Active development, refactoring to Hexagonal Architecture
 - **Purpose**: Simplify AWS multi-account setup for startups/small teams
 
 ## Key Components
@@ -26,12 +26,32 @@ AWS infrastructure automation tool that creates a production-ready multi-account
 ### Directory Structure
 ```
 /
-├── scripts/           # Core automation scripts
-├── docs/             # Documentation
-├── tests/            # Test suite (no AWS resources needed)
-├── output/           # Generated projects (gitignored)
-├── .work/            # Session artifacts (gitignored)
-└── .claude/          # IDE settings (gitignored)
+├── scripts/
+│   ├── setup-complete-project.sh    # Main orchestrator
+│   ├── ports/                       # Interfaces (Hexagonal Architecture)
+│   │   ├── cloud-provider-port.sh   # Cloud operations interface
+│   │   └── vcs-provider-port.sh     # VCS operations interface
+│   ├── adapters/                    # Implementations
+│   │   ├── aws/                     # AWS implementations (coming)
+│   │   ├── github/                  # GitHub implementations (coming)
+│   │   └── mock/                    # Testing mocks
+│   │       ├── mock-cloud-adapter.sh
+│   │       └── mock-vcs-adapter.sh
+│   ├── domain/                      # Business logic (coming)
+│   └── lib/                         # Shared utilities
+│       ├── config-manager.sh
+│       ├── prerequisite-checker.sh
+│       └── ui-helpers.sh
+├── docs/
+│   ├── ARCHITECTURE_REFACTORING.md  # Hexagonal architecture plan
+│   └── ...
+├── tests/
+│   ├── test-config-simple.sh        # Config tests (24 tests)
+│   ├── test-mock-adapters.sh        # Mock adapter tests (30 tests)
+│   └── ...
+├── output/                          # Generated projects (gitignored)
+├── .work/                           # Session artifacts (gitignored)
+└── .claude/                         # IDE settings (gitignored)
 ```
 
 ## Development Conventions
@@ -50,7 +70,37 @@ AI: Claude Code
 ### Testing
 - Run tests: `./tests/test-config-simple.sh`
 - Tests work WITHOUT creating AWS/GitHub resources
-- 24/24 tests currently passing
+- Config tests: 24/24 passing
+- Mock adapter tests: 30/30 passing (NEW)
+
+### Hexagonal Architecture (v0.7.0-alpha)
+**Status**: Foundation complete, implementation in progress
+
+The project is being refactored to Hexagonal Architecture (Ports & Adapters) for:
+- **Better testability**: Mock adapters enable fast tests without AWS/GitHub
+- **Multi-provider support**: Easy to add GitLab, Azure, GCP
+- **Clear separation**: Business logic independent of infrastructure
+
+**Current State**:
+- ✅ **Ports** (interfaces): Cloud provider, VCS provider
+- ✅ **Mock adapters**: Full test doubles for all port functions
+- ✅ **Test suite**: 30 tests validating mock adapters
+- 🚧 **AWS adapters**: Extracting existing AWS code (next phase)
+- 🚧 **GitHub adapters**: Extracting existing GitHub code (next phase)
+- 🚧 **Domain logic**: Pure business rules (next phase)
+
+**Key Files**:
+- `scripts/ports/` - Interface definitions
+- `scripts/adapters/mock/` - Testing implementations
+- `docs/ARCHITECTURE_REFACTORING.md` - Full refactoring plan
+- `tests/test-mock-adapters.sh` - Adapter validation tests
+
+**Benefits Achieved**:
+- Tests run in <1 second (vs requiring AWS setup)
+- Can test account creation logic without AWS Organizations access
+- Clear contracts for future providers (GitLab, Azure, GCP)
+
+See `docs/ARCHITECTURE_REFACTORING.md` for complete refactoring plan.
 
 ### Working Files
 - Use `.work/` for temporary files, test results, session notes
@@ -74,11 +124,13 @@ Creates 3 AWS accounts (dev/staging/prod) with:
 - GitHub CI/CD with OIDC
 - Configuration system (YAML/JSON/env)
 - Mode detection (interactive/CI)
-- Comprehensive test suite
+- Comprehensive test suite (54 tests total)
+- Hexagonal architecture foundation (ports + mock adapters)
 - Version reset to v0.x.x
 
 🚧 In Progress:
-- GitLab support
+- Hexagonal architecture implementation (AWS/GitHub adapters)
+- GitLab support (architecture ready, awaiting implementation)
 - Account templates (minimal/standard/enterprise)
 - Multi-region support
 
@@ -89,7 +141,8 @@ Creates 3 AWS accounts (dev/staging/prod) with:
 make setup-all PROJECT_CODE=XYZ EMAIL_PREFIX=email OU_ID=ou-xxxx-xxxxxxxx GITHUB_ORG=username REPO_NAME=repo
 
 # Testing
-./tests/test-config-simple.sh
+./tests/test-config-simple.sh        # Config system tests (24 tests)
+./tests/test-mock-adapters.sh        # Mock adapter tests (30 tests)
 
 # Check prerequisites
 make check-prerequisites
@@ -130,4 +183,4 @@ When working on this project:
 5. Follow commit message convention (add "AI: Claude Code")
 6. Validate with `make check-prerequisites`
 
-Last updated: 2025-10-19 (v0.6.0 release)
+Last updated: 2025-10-21 (v0.7.0-alpha - Hexagonal architecture foundation)
