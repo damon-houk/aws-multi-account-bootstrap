@@ -75,41 +75,46 @@ fetch_template_list() {
 
     if [ $? -eq 0 ] && [ -n "$response" ]; then
         # Parse XML and convert to JSON format
-        local json_output
-        json_output=$(echo "$response" | \
-            grep "<Key>" | \
-            sed 's/<Key>//g' | \
-            sed 's/<\/Key>//g' | \
-            sed 's/^[[:space:]]*//g' | \
-            jq -R -s 'split("\n") | map(select(length > 0)) |
-                map({
-                    name: .,
-                    region: "'"$region"'",
-                    url: "https://s3.amazonaws.com/'"$bucket"'/\(.)",
-                    type: (
-                        if test(".template$") then "json"
-                        elif test(".yaml$") then "yaml"
-                        elif test(".yml$") then "yaml"
-                        else "unknown"
-                        end
-                    ),
-                    category: (
-                        if test("(?i)lamp|wordpress|drupal|joomla") then "web"
-                        elif test("(?i)rds|database|mysql|postgres") then "database"
-                        elif test("(?i)vpc|network|subnet") then "network"
-                        elif test("(?i)ecs|docker|container|batch") then "container"
-                        elif test("(?i)lambda|serverless") then "serverless"
-                        elif test("(?i)elastic.?beanstalk") then "platform"
-                        elif test("(?i)windows|active.?directory") then "windows"
-                        elif test("(?i)emr|kinesis|data") then "analytics"
-                        else "other"
-                        end
-                    )
-                })'
-        )
+        # Extract just the Key values from the XML response
+        local keys
+        keys=$(echo "$response" | grep -o '<Key>[^<]*</Key>' | sed 's/<Key>//g' | sed 's/<\/Key>//g')
 
-        echo "$json_output" > "$cache_file"
-        echo "$json_output"
+        # If we got keys, convert them to JSON
+        if [ -n "$keys" ]; then
+            local json_output
+            json_output=$(echo "$keys" | \
+                jq -R -s 'split("\n") | map(select(length > 0)) |
+                    map({
+                        name: .,
+                        region: "'"$region"'",
+                        url: "https://s3.amazonaws.com/'"$bucket"'/\(.)",
+                        type: (
+                            if test("\\.template$") then "json"
+                            elif test("\\.yaml$") then "yaml"
+                            elif test("\\.yml$") then "yaml"
+                            else "unknown"
+                            end
+                        ),
+                        category: (
+                            if test("(?i)lamp|wordpress|drupal|joomla") then "web"
+                            elif test("(?i)rds|database|mysql|postgres") then "database"
+                            elif test("(?i)vpc|network|subnet") then "network"
+                            elif test("(?i)ecs|docker|container|batch") then "container"
+                            elif test("(?i)lambda|serverless") then "serverless"
+                            elif test("(?i)elastic.?beanstalk") then "platform"
+                            elif test("(?i)windows|active.?directory") then "windows"
+                            elif test("(?i)emr|kinesis|data") then "analytics"
+                            else "other"
+                            end
+                        )
+                    })'
+            )
+
+            echo "$json_output" > "$cache_file"
+            echo "$json_output"
+        else
+            echo "[]"
+        fi
     else
         echo "[]"
     fi
@@ -303,6 +308,151 @@ fetch_quickstart_list() {
     fi
 }
 
+# Fetch production-ready CloudFormation templates from cloudonaut (widdix)
+# This is the single best-maintained source of production-ready CloudFormation templates
+fetch_production_templates() {
+    local cache_file="$TEMPLATE_CACHE_DIR/metadata/production-templates.json"
+
+    # Check cache
+    if is_cache_valid "$cache_file"; then
+        cat "$cache_file"
+        return 0
+    fi
+
+    local all_templates="[]"
+
+    # cloudonaut/widdix templates - production-ready, well-tested, actively maintained
+    local response
+    response=$(curl -s --max-time "$TEMPLATE_API_TIMEOUT" \
+        "https://api.github.com/repos/widdix/aws-cf-templates/contents" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$response" ]; then
+        # Get all directories (each represents a category)
+        local cloudonaut_dirs
+        cloudonaut_dirs=$(echo "$response" | jq -r '[.[] | select(.type == "dir") | .name]' 2>/dev/null)
+
+        if [ -n "$cloudonaut_dirs" ] && [ "$cloudonaut_dirs" != "null" ]; then
+            # Fetch templates from each directory
+            for dir in $(echo "$cloudonaut_dirs" | jq -r '.[]'); do
+                local dir_response
+                dir_response=$(curl -s --max-time "$TEMPLATE_API_TIMEOUT" \
+                    "https://api.github.com/repos/widdix/aws-cf-templates/contents/$dir" 2>/dev/null)
+
+                if [ $? -eq 0 ] && [ -n "$dir_response" ]; then
+                    local dir_templates
+                    dir_templates=$(echo "$dir_response" | jq --arg dir "$dir" '[
+                        .[] |
+                        select(.type == "file") |
+                        select(.name | test("\\.(yaml|yml|json)$")) |
+                        {
+                            name: .name,
+                            path: .path,
+                            url: .html_url,
+                            download_url: .download_url,
+                            repository: "aws-cf-templates",
+                            author: "cloudonaut/widdix",
+                            source: "cloudonaut",
+                            category: $dir,
+                            description: ("Production-ready " + $dir + " template: " + .name)
+                        }
+                    ]' 2>/dev/null)
+
+                    if [ -n "$dir_templates" ] && [ "$dir_templates" != "null" ] && [ "$dir_templates" != "[]" ]; then
+                        all_templates=$(echo "$all_templates" "$dir_templates" | jq -s 'add')
+                    fi
+                fi
+            done
+        fi
+    fi
+
+    echo "$all_templates" > "$cache_file"
+    echo "$all_templates"
+}
+
+# Fetch official AWS CloudFormation templates from GitHub
+fetch_github_templates() {
+    local cache_file="$TEMPLATE_CACHE_DIR/metadata/github-templates.json"
+
+    # Check cache
+    if is_cache_valid "$cache_file"; then
+        cat "$cache_file"
+        return 0
+    fi
+
+    # Fetch from official aws-cloudformation GitHub org
+    local repos=("aws-cloudformation-templates" "ecs-refarch-cloudformation")
+    local all_templates="[]"
+
+    for repo in "${repos[@]}"; do
+        # Get repository content
+        local response
+        response=$(curl -s --max-time "$TEMPLATE_API_TIMEOUT" \
+            "https://api.github.com/repos/aws-cloudformation/${repo}/contents" 2>/dev/null)
+
+        if [ $? -eq 0 ] && [ -n "$response" ]; then
+            # Parse YAML/JSON files from the repo
+            local templates
+            templates=$(echo "$response" | jq '[
+                .[] |
+                select(.type == "file") |
+                select(.name | test("\\.(yaml|yml|json|template)$")) |
+                {
+                    name: .name,
+                    path: .path,
+                    url: .html_url,
+                    download_url: .download_url,
+                    repository: "'"$repo"'",
+                    source: "github-official",
+                    category: (
+                        if (.name | test("(?i)vpc|network|subnet")) then "network"
+                        elif (.name | test("(?i)ecs|fargate|container")) then "container"
+                        elif (.name | test("(?i)rds|database|dynamodb")) then "database"
+                        elif (.name | test("(?i)lambda|serverless|api")) then "serverless"
+                        elif (.name | test("(?i)s3|storage")) then "storage"
+                        elif (.name | test("(?i)security|iam|kms")) then "security"
+                        elif (.name | test("(?i)cicd|pipeline|codebuild")) then "devops"
+                        else "other"
+                        end
+                    )
+                }
+            ]' 2>/dev/null)
+
+            if [ -n "$templates" ] && [ "$templates" != "null" ]; then
+                all_templates=$(echo "$all_templates" "$templates" | jq -s 'add')
+            fi
+        fi
+    done
+
+    # Also fetch from aws-samples/startup-kit-templates
+    response=$(curl -s --max-time "$TEMPLATE_API_TIMEOUT" \
+        "https://api.github.com/repos/aws-samples/startup-kit-templates/contents/templates" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$response" ]; then
+        local startup_templates
+        startup_templates=$(echo "$response" | jq '[
+            .[] |
+            select(.type == "file") |
+            select(.name | test("\\.(yaml|yml|json|template)$")) |
+            {
+                name: .name,
+                path: .path,
+                url: .html_url,
+                download_url: .download_url,
+                repository: "startup-kit-templates",
+                source: "aws-samples",
+                category: "startup"
+            }
+        ]' 2>/dev/null)
+
+        if [ -n "$startup_templates" ] && [ "$startup_templates" != "null" ]; then
+            all_templates=$(echo "$all_templates" "$startup_templates" | jq -s 'add')
+        fi
+    fi
+
+    echo "$all_templates" > "$cache_file"
+    echo "$all_templates"
+}
+
 # Get template metadata as JSON
 get_template_metadata() {
     local template_name="$1"
@@ -345,5 +495,7 @@ export -f download_template
 export -f analyze_template
 export -f estimate_template_cost
 export -f fetch_quickstart_list
+export -f fetch_production_templates
+export -f fetch_github_templates
 export -f get_template_metadata
 export -f list_templates_formatted

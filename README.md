@@ -1,17 +1,64 @@
 # AWS Multi-Account Bootstrap
 
-> 🚀 Bootstrap a complete AWS multi-account infrastructure with GitHub CI/CD in one command
+> **One-command AWS multi-account setup with CI/CD**
+>
+> Production-ready infrastructure for startups and small teams
 
-[![Version](https://img.shields.io/badge/version-v0.6.0--dev-orange.svg)](VERSIONING.md)
-[![Status](https://img.shields.io/badge/status-pre--release-yellow.svg)](VERSIONING.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-
-> ⚠️ **Pre-1.0 Notice**: This project is in active development. Breaking changes may occur between any v0.x releases. See [VERSIONING.md](VERSIONING.md) for details.
+[![Version](https://img.shields.io/badge/version-v2.0.0--alpha-blue)]()
 
 **Stop spending days configuring AWS infrastructure. Start building your application.**
 
-This tool automates the complete setup of a production-ready AWS multi-account environment with modern CI/CD, semantic versioning, and cost controls—all in a single command.
+This tool automates the complete setup of a production-ready AWS multi-account environment with modern CI/CD, semantic versioning, and cost controls.
+
+---
+
+## 📦 Monorepo Structure
+
+This repository contains **two versions** of the AWS Multi-Account Bootstrap tool:
+
+### 🔧 [v1 - Bash](./bash) (Maintenance Mode)
+
+**Status**: Stable, maintenance only
+**Version**: 1.x
+**Use when**: You prefer scripts, minimal dependencies
+
+```bash
+cd bash
+make setup-all PROJECT_CODE=XYZ EMAIL_PREFIX=email \
+  OU_ID=ou-xxxx-xxxxxxxx GITHUB_ORG=username REPO_NAME=repo
+```
+
+[→ v1 Documentation](./bash/README.md)
+
+---
+
+### 🚀 [v2 - Go + Multi-Platform](./go) (Active Development) ⭐ **RECOMMENDED**
+
+**Status**: Alpha (in active development)
+**Version**: 2.0.0-alpha
+**Platforms**: CLI (TUI), Web, Mobile (iOS/Android), Desktop (Mac/Win/Linux)
+
+```bash
+# CLI with beautiful TUI
+aws-bootstrap create --project XYZ
+
+# API Server for web/mobile apps
+aws-bootstrap serve --port 8080
+```
+
+**Why v2?**
+- ✅ Beautiful terminal UI (Bubbletea)
+- ✅ Web dashboard
+- ✅ Mobile apps (React Native)
+- ✅ Desktop app (Wails)
+- ✅ Strong typing (Go + TypeScript)
+- ✅ Single binary distribution
+- ✅ Better testing
+
+[→ v2 Documentation](./go/README.md) *(coming soon)*
+
+---
 
 ## ✨ What You Get
 
@@ -43,605 +90,324 @@ In **one command**, this tool sets up:
 - 🚀 **Side Projects** that might become serious
 
 **Not ideal for:**
-- Large enterprises needing 10+ accounts (but see our [roadmap](#roadmap))
-- Teams already using Terraform (check out [alternatives](#alternatives))
-- Projects that don't use GitHub (GitLab support coming soon)
+- Large enterprises needing 10+ accounts
+- Teams already using Terraform heavily
+- Projects that don't use GitHub (GitLab support coming in v2)
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
+### v2 (Go) - Recommended for New Projects
+
+**Prerequisites**:
+- Go 1.21+
+- AWS CLI configured
+- GitHub CLI authenticated
 
 ```bash
-# Check you have everything (takes 30 seconds)
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git
+cd aws-multi-account-bootstrap
+
+# Build the CLI
+cd go
+make build
+
+# Create multi-account setup
+./bin/aws-bootstrap create \
+  --project XYZ \
+  --email your-email@gmail.com \
+  --ou-id ou-xxxx-xxxxxxxx \
+  --github-org your-org \
+  --repo your-repo
+
+# Or use interactive mode
+./bin/aws-bootstrap create --interactive
+```
+
+### v1 (Bash) - Stable and Battle-Tested
+
+**Prerequisites**:
+- Bash 4+
+- AWS CLI configured
+- GitHub CLI authenticated
+- jq (JSON processor)
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap.git
+cd aws-multi-account-bootstrap/bash
+
+# Check prerequisites
 make check-prerequisites
+
+# Run setup
+make setup-all PROJECT_CODE=XYZ EMAIL_PREFIX=email \
+  OU_ID=ou-xxxx-xxxxxxxx GITHUB_ORG=username REPO_NAME=repo
 ```
 
-You need:
-- AWS account with Organizations enabled
-- AWS CLI configured (`aws sso login`)
-- AWS CDK installed (`npm install -g aws-cdk`)
-- GitHub CLI (`brew install gh`)
-- Node.js 20+, jq, git
+---
 
-### One-Command Setup
+## 📂 Repository Structure
+
+```
+aws-multi-account-bootstrap/
+├── bash/                    # v1 - Bash (maintenance mode)
+│   ├── scripts/             # Bash scripts
+│   ├── tests/               # Test suite (54 tests)
+│   ├── docs/                # v1 documentation
+│   └── README.md            # v1 guide
+│
+├── go/                      # v2 - Go backend (active)
+│   ├── cmd/
+│   │   ├── cli/             # CLI tool
+│   │   └── server/          # API server
+│   ├── internal/
+│   │   ├── domain/          # Business logic
+│   │   ├── ports/           # Interfaces
+│   │   └── adapters/        # AWS/GitHub implementations
+│   ├── api/                 # OpenAPI spec
+│   └── README.md            # v2 guide
+│
+├── apps/                    # Frontend applications
+│   ├── web/                 # React web dashboard
+│   ├── mobile/              # React Native app
+│   └── desktop/             # Wails desktop app
+│
+├── packages/                # Shared TypeScript
+│   ├── client/              # API client
+│   ├── core/                # Shared business logic
+│   └── ui/                  # UI components
+│
+└── docs/                    # Shared documentation
+    ├── architecture/        # Architecture decisions
+    ├── migration/           # Migration guides
+    └── guides/              # How-to guides
+```
+
+---
+
+## 🏗️ Architecture
+
+Both versions use **Hexagonal Architecture** (Ports & Adapters):
+
+```
+┌─────────────────────────────────────────┐
+│          Domain Logic (Pure)            │
+│   Account Setup, CI/CD, Cost Mgmt      │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│        Ports (Interfaces)               │
+│   CloudProvider, VCSProvider            │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│        Adapters (Implementations)       │
+│   AWS, GitHub, Mock (testing)           │
+└─────────────────────────────────────────┘
+```
+
+**Benefits**:
+- ✅ Easy to test (mock adapters, no AWS credentials needed)
+- ✅ Easy to extend (add Azure, GitLab, GCP support)
+- ✅ Clear separation of concerns
+- ✅ Business logic independent of infrastructure
+
+See [Architecture Documentation](./docs/architecture/HEXAGONAL_ARCHITECTURE.md) *(coming soon)* for details.
+
+---
+
+## 🔄 Migration from v1 to v2
+
+Both versions can coexist. You can:
+
+1. **Keep using v1** - It's stable and works great
+2. **Try v2 in parallel** - Test while keeping v1
+3. **Migrate fully** - When v2 reaches stable
+
+See [Migration Guide](./docs/migration/BASH_TO_GO.md) *(coming soon)* for details.
+
+---
+
+## 💻 Development
+
+### Working on Go backend (v2)
 
 ```bash
-# 1. Create an OU in AWS Console, get its ID (ou-xxxx-xxxxxxxx)
+cd go
 
-# 2. Preview what will be created (dry-run mode)
-make setup-all \
-  PROJECT_CODE=MYP \
-  EMAIL_PREFIX=your.email \
-  OU_ID=ou-xxxx-xxxxxxxx \
-  GITHUB_ORG=your-github-username \
-  REPO_NAME=my-project \
-  DRY_RUN=true
+# Install dependencies
+go mod download
 
-# 3. Run the actual setup (remove DRY_RUN=true)
-make setup-all \
-  PROJECT_CODE=MYP \
-  EMAIL_PREFIX=your.email \
-  OU_ID=ou-xxxx-xxxxxxxx \
-  GITHUB_ORG=your-github-username \
-  REPO_NAME=my-project
+# Run tests
+make test
+
+# Build CLI
+make build
+
+# Run CLI
+./bin/aws-bootstrap --help
+
+# Start API server
+./bin/aws-bootstrap serve
 ```
 
-**That's it!** ☕ Go get coffee. Come back to:
-- 3 AWS accounts created and configured
-- GitHub repository with CI/CD live
-- First release (v0.1.0) published
-- Billing alerts active
-- Documentation generated
-
----
-
-## 📖 What Happens Behind the Scenes
-
-### 1. AWS Infrastructure (2-3 minutes)
-
-Creates accounts in your AWS Organization:
-```
-Root
-└── YOUR-PROJECT OU
-    ├── MYP_DEV
-    ├── MYP_STAGING
-    └── MYP_PROD
-```
-
-Bootstraps AWS CDK in each account with:
-- S3 bucket for assets
-- ECR repository for containers
-- IAM roles for deployments
-- KMS keys for encryption
-
-### 2. GitHub Repository (1 minute)
-
-Creates and configures repository:
-- ✅ Branch protection (main, develop)
-- ✅ Environments (dev, staging, prod)
-- ✅ OIDC provider for secure deployments
-- ✅ GitHub Actions workflows
-- ✅ Semantic release automation
-- ✅ Issue labels and templates
-
-### 3. CI/CD Pipeline (30 seconds)
-
-Sets up automated deployments:
-```
-Push to develop  → Deploy to dev
-Push to main     → Deploy to staging + Create release
-Manual trigger   → Deploy to prod (requires approval)
-```
-
-### 4. Cost Controls (1 minute)
-
-Configures billing alerts for each account:
-- Email alert at $15 spending
-- Budget alerts at 60%, 90%, 100% of $25
-- Forecast alerts for predicted overages
-- Monthly reset
-
----
-
-## 🎨 Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     AWS Organization                         │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Management Account                                   │  │
-│  │  - Organization root                                  │  │
-│  │  - Billing consolidated                              │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                           │                                  │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  YOUR-PROJECT OU                                      │  │
-│  │  ├── DEV Account                                      │  │
-│  │  │   - Auto-deploy from develop branch               │  │
-│  │  │   - Lower resources, can be shut down             │  │
-│  │  │                                                    │  │
-│  │  ├── STAGING Account                                  │  │
-│  │  │   - Auto-deploy from main branch                  │  │
-│  │  │   - Production-like environment                   │  │
-│  │  │                                                    │  │
-│  │  └── PROD Account                                     │  │
-│  │      - Manual deploy with approval                    │  │
-│  │      - Full monitoring & backups                      │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           │ OIDC
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     GitHub Repository                        │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Branches                                             │  │
-│  │  - main (protected)                                   │  │
-│  │  - develop (protected)                                │  │
-│  │  - feature/* (PR required)                           │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  GitHub Actions Workflows                             │  │
-│  │  - PR validation (tests + CDK diff)                  │  │
-│  │  - Auto-deploy to dev/staging                        │  │
-│  │  - Manual deploy to prod                             │  │
-│  │  - Semantic release                                   │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📦 AWS Template Browser
-
-Browse, search, and analyze AWS CloudFormation templates from official repositories:
+### Working on frontends (v2)
 
 ```bash
-# Interactive template browser
-./scripts/browse-templates.sh
+# Install dependencies (from root)
+pnpm install
 
-# Search for specific templates
-./scripts/browse-templates.sh --search wordpress
+# Start web app (development)
+cd apps/web
+pnpm dev
 
-# Browse by category
-./scripts/browse-templates.sh --category database --json
+# Start mobile app
+cd apps/mobile
+pnpm start
 
-# Analyze a template for resources
-./scripts/browse-templates.sh --analyze WordPress_Single_Instance.template
-
-# Estimate template costs
-./scripts/browse-templates.sh --estimate RDS_MySQL_With_Read_Replica.template
-
-# Start API server for web frontends
-./scripts/template-api-server.sh --port 8080
+# Build all apps
+pnpm build
 ```
 
-The template browser provides:
-- 🔍 **Search & Filter** - Find templates by keyword or category
-- 📊 **Template Analysis** - See resources and services used
-- 💰 **Cost Estimation** - Get cost estimates for template deployments
-- 🌐 **RESTful API** - Integrate with web frontends and other tools
-- 📚 **200+ Templates** - Access AWS's entire template library
-- 🚀 **Quick Starts** - Browse production-ready reference architectures
+### Working on bash (v1)
 
-See [docs/TEMPLATE_BROWSER.md](docs/TEMPLATE_BROWSER.md) for detailed documentation.
+```bash
+cd bash
+
+# Run tests
+./tests/test-config-simple.sh        # Config system (24 tests)
+./tests/test-mock-adapters.sh        # Mock adapters (30 tests)
+
+# Test setup (dry-run)
+./scripts/setup-complete-project.sh --dry-run
+```
+
+---
+
+## 🧪 Testing
+
+### Go Tests (v2)
+```bash
+cd go
+make test                    # Unit tests
+make test-integration        # Integration tests (requires AWS)
+make test-coverage           # Coverage report
+```
+
+### Bash Tests (v1)
+```bash
+cd bash
+./tests/test-config-simple.sh       # Config system (24 tests)
+./tests/test-mock-adapters.sh       # Mock adapters (30 tests)
+```
+
+### Frontend Tests (v2)
+```bash
+pnpm test                    # All frontend tests
+pnpm test --filter=web       # Web app only
+pnpm test --filter=mobile    # Mobile app only
+```
 
 ---
 
 ## 💰 Cost Estimation
 
-Get accurate, up-to-date AWS cost estimates before you start:
+Typical monthly costs for small projects:
 
-```bash
-# Interactive mode - explore different scenarios easily
-./scripts/estimate-costs.sh --interactive
+| Environment | Estimated Cost |
+|-------------|----------------|
+| Dev         | $10-15/month   |
+| Staging     | $10-15/month   |
+| Prod        | $20-50/month   |
+| **Total**   | **$40-80/month** |
 
-# Command-line mode (uses public API, no credentials needed)
-./scripts/estimate-costs.sh
-
-# Estimate with additional services
-./scripts/estimate-costs.sh --stacks api-lambda,static-website,rds-postgres
-
-# Estimate for different regions
-./scripts/estimate-costs.sh --region eu-west-1
-
-# Use more accounts or different usage levels
-./scripts/estimate-costs.sh --accounts 5 --usage moderate
-
-# See detailed usage level definitions
-./scripts/estimate-costs.sh --explain-usage
-
-# List available stack types
-./scripts/estimate-costs.sh --list-stacks
-```
-
-### Interactive Mode
-
-The interactive cost estimator provides a user-friendly menu system to:
-- 🔄 Dynamically adjust number of accounts, regions, and usage levels
-- 📊 See real-time cost updates as you make changes
-- 🏗️ Toggle additional services on/off to see their impact
-- 💾 Export estimates to file for documentation
-- 🎯 Compare costs across all usage levels simultaneously
-
-### Pricing Methods
-
-The estimator supports two methods:
-
-1. **Public API (default)** - No AWS credentials required
-   - Uses AWS public Bulk Pricing API
-   - Real-time pricing data from AWS
-   - Works without any setup
-   - Default region: `us-east-2` (Ohio)
-
-2. **AWS CLI Method** - Optional, more detailed
-   - Requires AWS credentials configured
-   - May provide additional pricing details
-   - Enable with: `--method aws-cli`
-
-The estimator includes:
-- Base infrastructure costs (CloudWatch, S3, ECR)
-- Usage-based estimates (minimal, light, moderate, heavy)
-- Additional stack costs (API Gateway, Lambda, RDS, etc.)
-- Region-specific pricing
-
-## 📋 Usage Examples
-
-### Deploy Your First Stack
-
-```bash
-# 1. Create a CDK stack
-cat > infrastructure/lib/my-stack.ts <<EOF
-import * as cdk from 'aws-cdk-lib';
-import * as s3 from 'aws-cdk-lib/aws-s3';
-
-export class MyStack extends cdk.Stack {
-  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
-    
-    new s3.Bucket(this, 'MyBucket', {
-      versioned: true,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
-  }
-}
-EOF
-
-# 2. Test locally
-npm run cdk synth
-
-# 3. Deploy to dev
-make deploy-dev
-
-# 4. Push to GitHub for automated deployment
-git checkout -b feature/add-s3-bucket
-git add .
-git commit -m "feat: Add S3 bucket for data storage"
-git push
-
-# 5. Create PR → Merge to develop → Auto-deploys to dev!
-```
-
-### Semantic Commit Messages
-
-Versioning is automated based on commit messages:
-
-```bash
-# Patch release (0.1.0 → 0.1.1)
-git commit -m "fix: Correct timezone handling"
-
-# Minor release (0.1.0 → 0.2.0)
-git commit -m "feat: Add user authentication"
-
-# Major release (0.1.0 → 1.0.0)
-git commit -m "feat!: Redesign API
-
-BREAKING CHANGE: All endpoints now require API key"
-
-# No release
-git commit -m "docs: Update README"
-git commit -m "chore: Update dependencies"
-```
-
-### Adjust Billing Alerts
-
-```bash
-# Edit thresholds
-vim setup-billing-alerts.sh
-# Change line ~60:
-# ALERT_THRESHOLD[prod]=50  # Alert at $50
-# BUDGET_LIMIT[prod]=100     # Budget limit $100
-
-# Rerun setup
-make setup-billing PROJECT_CODE=MYP EMAIL=you@example.com
-```
-
-### Add a New Account
-
-```bash
-# Coming in v1.1 - for now, run setup again with updated config
-# Or add manually via AWS Console + re-run bootstrap
-```
+*Costs include: CloudFormation, CDK, S3, CloudWatch, minimal compute*
 
 ---
 
-## 📚 Documentation
+## 🗺️ Roadmap
 
-### Configuration Guide
+### v1 (Bash) - Maintenance Mode
+- ✅ v1.0.0 - Stable release
+- 🔄 Bug fixes only
+- ❌ No new features
 
-**New!** Flexible configuration system with support for:
-- YAML/JSON configuration files
-- Environment variables
-- Interactive prompts
-- CI/CD mode with auto-detection
+### v2 (Go) - Active Development
 
-See [Configuration Guide](docs/CONFIGURATION.md) for complete details on:
-- Execution modes (interactive vs CI)
-- Configuration precedence rules
-- Config file formats (YAML/JSON)
-- Environment variable usage
-- Examples for teams and CI pipelines
+**Phase 1: Foundation (Current)**
+- 🚧 Port domain logic from bash to Go
+- 🚧 Create adapters (AWS, GitHub)
+- 🚧 Build basic CLI
 
-### Generated Project Location
+**Phase 2: Enhanced UX (Q1 2026)**
+- 📅 CLI with beautiful TUI (Bubbletea)
+- 📅 API server (REST/GraphQL)
+- 📅 Web dashboard (React)
 
-All generated project files are created in the `output/{PROJECT_CODE}/` directory. For example, if your `PROJECT_CODE` is `MYP`, your project will be located at:
+**Phase 3: Multi-Platform (Q2 2026)**
+- 📅 Mobile apps (iOS/Android with React Native)
+- 📅 Desktop app (Mac/Win/Linux with Wails)
+- 📅 Full documentation
 
-```
-output/MYP/
-├── infrastructure/        # CDK infrastructure code
-├── src/                   # Application source code
-├── .github/workflows/     # CI/CD workflows
-├── CICD_SETUP_SUMMARY.md
-├── GITHUB_SETUP_SUMMARY.md
-├── BILLING_ALERTS_SUMMARY.md
-├── package.json
-└── ... other project files
-```
-
-This keeps the bootstrap tool repository clean and allows you to easily manage multiple projects.
-
-### Setup Summary Files
-
-After setup completes, you'll find these documentation files in your project directory (`output/{PROJECT_CODE}/`):
-
-- **CICD_SETUP_SUMMARY.md** - AWS account IDs and configuration
-- **GITHUB_SETUP_SUMMARY.md** - GitHub repository settings
-- **BILLING_ALERTS_SUMMARY.md** - Cost alert configuration
-- **BILLING_MANAGEMENT.md** - Complete cost management guide
-
-View any summary:
-```bash
-cd output/MYP              # Navigate to your project
-cat CICD_SETUP_SUMMARY.md  # View AWS configuration
-cat GITHUB_SETUP_SUMMARY.md     # View GitHub setup
-cat BILLING_ALERTS_SUMMARY.md   # View billing alerts
-```
-
----
-
-## 🛠️ Commands Reference
-
-### Setup Commands
-```bash
-make setup-all              # Complete automated setup
-make create-accounts        # Just create AWS accounts
-make bootstrap              # Just bootstrap CDK
-make setup-cicd             # Just setup GitHub Actions
-make setup-github           # Just create GitHub repo
-make setup-billing          # Just setup billing alerts
-```
-
-### Development Commands
-```bash
-make install                # Install dependencies
-make build                  # Build TypeScript
-make test                   # Run tests
-make lint                   # Run linter
-make watch                  # Watch for changes
-```
-
-### Deployment Commands
-```bash
-make synth                  # Synthesize CloudFormation
-make diff                   # Show differences
-make deploy-dev             # Deploy to dev
-make deploy-staging         # Deploy to staging
-make deploy-prod            # Deploy to production
-```
-
-### Information Commands
-```bash
-make account-info PROJECT_CODE=MYP    # Show account IDs
-make list-accounts                     # List all accounts
-make check-prerequisites               # Check installed tools
-```
-
----
-
-## 💰 Cost Breakdown
-
-### Bootstrap Infrastructure Costs
-
-The baseline infrastructure created by this tool costs **nearly nothing** without any deployed application stacks:
-
-| Component | Cost per Account | 3 Accounts Total |
-|-----------|------------------|------------------|
-| **CDK Bootstrap S3 Bucket** | ~$0.023/mo | ~$0.07/mo |
-| **CDK Bootstrap ECR Repo** | $0 (no images) | $0 |
-| **IAM Roles & Policies** | $0 (always free) | $0 |
-| **AWS Budgets** | $0 (first 2 free) | $0 |
-| **SNS Email Notifications** | $0 (email free) | $0 |
-| **CloudWatch Alarms** | $0.10/alarm (optional) | $0.30/mo |
-| **Baseline Total** | ~$0.13/mo | **~$0.40/mo** |
-
-### Application Costs (Your CDK Stacks)
-
-Once you deploy your application stacks, costs depend on what you build:
-
-| Environment | Monthly Estimate | Example Workload |
-|-------------|------------------|------------------|
-| **Dev** | $10-100 | Small EC2/Lambda, RDS dev instance, S3 |
-| **Staging** | $50-200 | Similar to prod but smaller instances |
-| **Prod** | $100-500+ | Production EC2/ECS, RDS, CloudFront, etc. |
-| **Total** | **$160-800+/mo** | Full application across all environments |
-
-**Key Point:** The bootstrap tool itself costs less than $0.50/month. Your application costs depend entirely on what infrastructure you deploy with CDK.
-
-### Cost Optimization Tips
-
-**Bootstrap infrastructure:**
-- Billing alerts are completely free (AWS Budgets + SNS)
-- CloudWatch billing alarms are optional ($0.30/mo total)
-- S3 storage costs scale with CDK asset uploads (minimal)
-
-**Your application infrastructure:**
-- Use AWS Free Tier where possible
-- Shut down dev resources when not in use
-- Use smaller instance sizes in dev/staging
-- Delete unused CloudFormation stacks
-- Tag all resources for cost tracking
-- Review AWS Cost Explorer weekly
-
-See [BILLING_MANAGEMENT.md](docs/BILLING_MANAGEMENT.md) for detailed cost optimization strategies.
-
----
-
-## 🔐 Security
-
-This tool implements AWS security best practices:
-
-✅ **No Long-Lived Credentials**
-- GitHub Actions uses OIDC (OpenID Connect)
-- Temporary credentials per deployment
-- No access keys stored in GitHub
-
-✅ **Least Privilege**
-- Separate IAM roles per environment
-- Minimal permissions for each role
-- Can be further restricted per your needs
-
-✅ **Audit Logging**
-- CloudTrail enabled organization-wide
-- All API calls logged
-- Centralized in management account
-
-✅ **Encryption**
-- Data encrypted at rest (KMS)
-- Data encrypted in transit (TLS 1.2+)
-- Secrets in AWS Secrets Manager
-
-✅ **Branch Protection**
-- No direct commits to main/develop
-- Pull request required
-- Status checks must pass
-- Code review required (configurable)
-
-**Security Recommendations:**
-1. Enable MFA on all accounts
-2. Reduce IAM permissions from AdministratorAccess
-3. Enable AWS Config for compliance
-4. Enable GuardDuty for threat detection
-5. Regular security audits
-
----
-
-## Roadmap
-
-### Current (v0.6.0-dev)
-- [x] 3-account setup (dev, staging, prod)
-- [x] GitHub CI/CD with OIDC
-- [x] Semantic versioning
-- [x] Billing alerts
-- [x] Mode-based configuration system
-- [x] YAML/JSON config file support
-
-### Next Releases (v0.x)
-- [ ] GitLab CI/CD support
-- [ ] Account structure templates (minimal/standard/enterprise)
-- [ ] Interactive setup wizard
-- [ ] Multi-region support
-- [ ] Pre-configured stack templates
-- [ ] Dry-run mode
-
-### v1.0.0 (Future - When Stable)
-First stable release when:
-- Core features complete
-- CLI interface finalized
-- Production users successful
-- Comprehensive test coverage
-
-### v2.0.0 (Future - Major Enhancement)
-- [ ] Service Control Policies (SCPs)
-- [ ] AWS Control Tower integration
-- [ ] Compliance packs (HIPAA, SOC2, etc.)
-- [ ] SSO/Identity Center setup
-- [ ] Enterprise features
-
-[See full roadmap →](docs/ROADMAP.md)
+**Phase 4: v2.0.0 Stable (Q3 2026)**
+- 📅 Production-ready
+- 📅 Feature parity with v1
+- 📅 Multi-cloud support (Azure, GCP)
+- 📅 GitLab support
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+We welcome contributions! See [CONTRIBUTING.md](./bash/CONTRIBUTING.md) for guidelines.
 
-**Ways to contribute:**
-- 🐛 Report bugs
-- 💡 Suggest features
-- 📖 Improve documentation
-- 🧪 Add tests
-- 💻 Submit pull requests
-
----
-
-## Alternatives
-
-| Tool | Best For | Pros | Cons |
-|------|----------|------|------|
-| **aws-multi-account-bootstrap** (this) | Modern dev teams, startups | Simple, GitHub-first, batteries included | Only 3 accounts (for now) |
-| [aws-multi-account-multi-region-bootstrapping-terraform](https://github.com/oliverschenk/aws-multi-account-multi-region-bootstrapping-terraform) | Enterprise, Terraform users | Comprehensive, 5+ accounts, multi-region | Complex setup, CodeCommit only |
-| [terraform-aws-cdk_bootstrap](https://github.com/grendel-consulting/terraform-aws-cdk_bootstrap) | Control Tower + Terraform users | Terraform-native CDK bootstrap | Just bootstrap, not full setup |
-| AWS Control Tower | Large enterprises (50+ accounts) | AWS-managed, comprehensive | Expensive, complex, overkill for small teams |
-| Manual Setup | Learning AWS | Full control, educational | Days of work, error-prone |
+**Development priorities** (v2):
+1. ✅ Hexagonal architecture foundation
+2. 🚧 Port domain logic to Go
+3. 🚧 Create Go adapters (AWS, GitHub)
+4. 📅 Build CLI with TUI
+5. 📅 Create API server
+6. 📅 Build web dashboard
 
 ---
 
-## 📄 License
+## 📚 Documentation
 
-MIT License - see [LICENSE](LICENSE) file for details.
+- **v1 (Bash)**: [bash/README.md](./bash/README.md)
+- **v2 (Go)**: [go/README.md](./go/README.md) *(coming soon)*
+- **Architecture**: [docs/architecture/](./docs/architecture/) *(coming soon)*
+- **Migration**: [docs/migration/BASH_TO_GO.md](./docs/migration/) *(coming soon)*
+- **API Docs**: [go/api/README.md](./go/api/) *(coming soon)*
 
 ---
 
-## 🙏 Acknowledgments
+## 📝 License
 
-Inspired by AWS best practices and the pain of setting up multi-account infrastructure manually too many times.
-
-Built with:
-- [AWS CDK](https://aws.amazon.com/cdk/)
-- [GitHub Actions](https://github.com/features/actions)
-- [Semantic Release](https://semantic-release.gitbook.io/)
-- Lots of ☕ and determination
+Apache License 2.0 - see [LICENSE](./LICENSE) for details
 
 ---
 
 ## 💬 Support
 
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/damon-houk/aws-multi-account-bootstrap/issues)
-- 💡 [Discussions](https://github.com/damon-houk/aws-multi-account-bootstrap/discussions)
-- 📧 Email: damon.o.houk@gmail.com
+- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/aws-multi-account-bootstrap/discussions)
 
 ---
 
-<div align="center">
+## 🙏 Acknowledgments
 
-**If this saved you time, please ⭐ star the repo!**
+- Built with [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+- Inspired by AWS best practices and community feedback
+- Thanks to all contributors!
 
-Made with ❤️ for developers who want to ship, not configure infrastructure.
+---
 
-[Get Started](#quick-start) • [Documentation](docs/) • [Contributing](CONTRIBUTING.md)
+**Current Version**: 2.0.0-alpha.1
+**Status**: v1 (Stable), v2 (Active Development)
+**Maintained**: Yes
+**Production Ready**: v1 (Yes), v2 (Not Yet)
 
-</div>
+AI: Claude Code

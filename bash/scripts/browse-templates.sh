@@ -29,68 +29,6 @@ SELECTED_CATEGORY="all"
 SEARCH_KEYWORD=""
 ACTION="browse"  # browse, download, analyze, estimate
 
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --region|-r)
-            DEFAULT_REGION="$2"
-            shift 2
-            ;;
-        --category|-c)
-            SELECTED_CATEGORY="$2"
-            shift 2
-            ;;
-        --search|-s)
-            SEARCH_KEYWORD="$2"
-            shift 2
-            ;;
-        --format|-f)
-            OUTPUT_FORMAT="$2"
-            shift 2
-            ;;
-        --download|-d)
-            ACTION="download"
-            TEMPLATE_TO_DOWNLOAD="$2"
-            shift 2
-            ;;
-        --analyze|-a)
-            ACTION="analyze"
-            TEMPLATE_TO_ANALYZE="$2"
-            shift 2
-            ;;
-        --estimate|-e)
-            ACTION="estimate"
-            TEMPLATE_TO_ESTIMATE="$2"
-            shift 2
-            ;;
-        --list-regions)
-            list_template_regions
-            exit 0
-            ;;
-        --list-categories)
-            get_template_categories "$DEFAULT_REGION"
-            exit 0
-            ;;
-        --quickstarts|-q)
-            ACTION="quickstarts"
-            shift
-            ;;
-        --json)
-            OUTPUT_FORMAT="json"
-            shift
-            ;;
-        --help|-h)
-            show_help
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}Unknown option: $1${NC}"
-            show_help
-            exit 1
-            ;;
-    esac
-done
-
 # Show help
 show_help() {
     cat << EOF
@@ -110,6 +48,7 @@ ${YELLOW}Options:${NC}
     ${GREEN}-a, --analyze TEMPLATE${NC}   Analyze a template for resources
     ${GREEN}-e, --estimate TEMPLATE${NC}  Estimate costs for a template
     ${GREEN}-q, --quickstarts${NC}        Browse AWS Quick Starts from GitHub
+    ${GREEN}-g, --github${NC}             Browse official GitHub templates
     ${GREEN}--list-regions${NC}           List all available regions
     ${GREEN}--list-categories${NC}        List all template categories
     ${GREEN}--json${NC}                   Output in JSON format
@@ -136,6 +75,9 @@ ${YELLOW}Examples:${NC}
 
     # Browse Quick Starts
     $(basename "$0") --quickstarts
+
+    # Browse official GitHub templates
+    $(basename "$0") --github
 
 ${YELLOW}Categories:${NC}
     web         - Web applications (LAMP, WordPress, Drupal)
@@ -380,6 +322,72 @@ clear_filters() {
     echo -e "${GREEN}✓ Filters cleared${NC}"
 }
 
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --region|-r)
+            DEFAULT_REGION="$2"
+            shift 2
+            ;;
+        --category|-c)
+            SELECTED_CATEGORY="$2"
+            shift 2
+            ;;
+        --search|-s)
+            SEARCH_KEYWORD="$2"
+            shift 2
+            ;;
+        --format|-f)
+            OUTPUT_FORMAT="$2"
+            shift 2
+            ;;
+        --download|-d)
+            ACTION="download"
+            TEMPLATE_TO_DOWNLOAD="$2"
+            shift 2
+            ;;
+        --analyze|-a)
+            ACTION="analyze"
+            TEMPLATE_TO_ANALYZE="$2"
+            shift 2
+            ;;
+        --estimate|-e)
+            ACTION="estimate"
+            TEMPLATE_TO_ESTIMATE="$2"
+            shift 2
+            ;;
+        --list-regions)
+            list_template_regions
+            exit 0
+            ;;
+        --list-categories)
+            get_template_categories "$DEFAULT_REGION"
+            exit 0
+            ;;
+        --quickstarts|-q)
+            ACTION="quickstarts"
+            shift
+            ;;
+        --github|-g)
+            ACTION="github"
+            shift
+            ;;
+        --json)
+            OUTPUT_FORMAT="json"
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
 # Initialize cache
 init_template_cache
 
@@ -454,6 +462,31 @@ case "$ACTION" in
             fetch_quickstart_list
         else
             browse_quickstarts_interactive
+        fi
+        ;;
+
+    github)
+        if [ "$OUTPUT_FORMAT" = "json" ]; then
+            fetch_github_templates
+        else
+            echo -e "${BLUE}Fetching official AWS CloudFormation templates from GitHub...${NC}"
+            github_templates=$(fetch_github_templates)
+
+            # Display GitHub templates
+            echo ""
+            echo "$github_templates" | jq -r '
+                ["#", "NAME", "REPOSITORY", "SOURCE", "CATEGORY"],
+                ["--", "----", "----------", "------", "--------"],
+                (to_entries | .[] | [
+                    .key + 1,
+                    .value.name[0:40],
+                    .value.repository[0:30],
+                    .value.source,
+                    .value.category
+                ]) | @tsv' | column -t | head -30
+
+            echo ""
+            echo -e "${CYAN}Showing first 30 GitHub templates. Use --json for full list.${NC}"
         fi
         ;;
 esac
