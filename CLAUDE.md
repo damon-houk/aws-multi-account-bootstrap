@@ -74,9 +74,8 @@ aws-multi-account-bootstrap/          # Monorepo root
 │
 ├── .work/                            # Session artifacts (gitignored)
 ├── output/                           # Generated projects (gitignored)
-├── package.json                      # Monorepo root config
-├── turbo.json                        # Turborepo config
-├── pnpm-workspace.yaml               # pnpm workspaces
+├── package.json                      # Root package.json (minimal, for Prettier)
+├── Makefile                          # Root Makefile (orchestrates bash + Go)
 ├── README.md                         # Root README (monorepo overview)
 └── CLAUDE.md                         # This file
 ```
@@ -148,21 +147,10 @@ make build
 
 ### Working on Frontends (Future)
 
-```bash
-# From root
-pnpm install
-
-# Web app
-cd apps/web
-pnpm dev
-
-# Mobile app
-cd apps/mobile
-pnpm start
-
-# Build all
-pnpm build
-```
+*Will be added when frontend apps are built. At that time, we'll add:*
+- `pnpm` workspaces for TypeScript packages
+- `turborepo` for build orchestration
+- Frontend-specific tooling (Vite, React, React Native, etc.)
 
 ---
 
@@ -208,11 +196,11 @@ Both v1 and v2 use **Hexagonal Architecture**:
 - `bash/scripts/adapters/mock/` - Testing mocks
 - `bash/tests/test-mock-adapters.sh` - Port validation (30 tests)
 
-**Key Files (v2)** *(coming)*:
-- `go/internal/ports/` - Go interfaces
+**Key Files (v2)**:
+- `go/internal/ports/` - Go interfaces (CloudProvider, GitHubClient)
 - `go/internal/adapters/aws/` - AWS SDK implementations
 - `go/internal/adapters/github/` - go-github implementations
-- `go/internal/adapters/mock/` - Testing mocks
+- `go/internal/adapters/mock/` - Testing mocks (coming)
 
 ---
 
@@ -273,8 +261,8 @@ Creates a production-ready AWS infrastructure:
 
 **Phase 1: Repository Restructuring** *(completed)*
 - ✅ Move bash to `bash/` subdirectory
-- ✅ Create monorepo structure
-- ✅ Set up package.json, turbo.json
+- ✅ Create monorepo structure (simple, no turborepo)
+- ✅ Set up Makefile orchestration
 - ✅ Update README.md and CLAUDE.md
 - ✅ Commit restructuring
 - ✅ Initialize Go module
@@ -286,7 +274,7 @@ Creates a production-ready AWS infrastructure:
 - ✅ Write tests
 - 🚧 Build basic CLI (in progress)
 
-**Phase 3: Real Adapters** *(current - Week 2)*
+**Phase 3: Real Adapters** *(completed)*
 - ✅ Port AWS adapters to Go (completed 2025-10-22)
   - ✅ AWS Organizations (account creation, management)
   - ✅ AWS IAM (OIDC providers, GitHub Actions roles)
@@ -295,7 +283,15 @@ Creates a production-ready AWS infrastructure:
   - ✅ AWS CloudWatch (billing alarms)
   - ✅ AWS SNS (notifications)
   - ✅ AWS CDK (bootstrap)
-- 📅 Port GitHub adapters to Go
+- ✅ Port GitHub adapters to Go (completed 2025-10-22)
+  - ✅ Repository operations (create, exists, delete, default branch)
+  - ✅ Branch protection (reviews, status checks)
+  - ✅ Secrets & Variables (repo-level, environment-level with NaCl encryption)
+  - ✅ Environments (deployment environments with reviewers)
+  - ✅ Workflows (create, enable, commit to repo)
+  - ✅ OIDC setup (cloud provider authentication)
+  - ✅ Git operations (init, push)
+  - ✅ Releases (create releases and tags)
 - 📅 Integration tests
 
 **Phase 4: API Server** *(Week 3)*
@@ -348,20 +344,20 @@ make test
 ### Monorepo (Root)
 
 ```bash
-# Install frontend dependencies
-pnpm install
+# Test all (bash + Go)
+make test
 
-# Build all
-pnpm build
+# Test bash only
+make test-bash
 
-# Test all
-pnpm test
+# Test Go only
+make test-go
 
-# Run bash tests
-pnpm bash:test
+# Build Go
+make build-go
 
-# Run Go tests
-pnpm go:test
+# Pre-push checks (run before committing!)
+make pre-push
 ```
 
 ---
@@ -418,8 +414,8 @@ pnpm go:test
 - **API**: Standard library net/http or fiber
 - **Testing**: Go test + testify
 
-### Frontends (v2)
-- **Monorepo**: Turborepo + pnpm workspaces
+### Frontends (v2) - Future
+- **Monorepo**: pnpm workspaces + Turborepo (will add when building frontends)
 - **Web**: React + Vite + TypeScript
 - **Mobile**: React Native + Expo
 - **Desktop**: Wails (Go + React)
@@ -515,6 +511,6 @@ See main [README.md](./README.md) for detailed roadmap.
 
 ---
 
-Last updated: 2025-10-22 (AWS adapter implementation complete for Go v2)
+Last updated: 2025-10-22 (GitHub adapter implementation complete for Go v2 - Phase 3 complete)
 
 AI: Claude Code
