@@ -19,6 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/config-manager.sh
 source "$SCRIPT_DIR/lib/config-manager.sh"
 
+# Source cost estimator (with AWS Pricing API support)
+# shellcheck source=scripts/lib/cost-estimator.sh
+source "$SCRIPT_DIR/lib/cost-estimator.sh" 2>/dev/null || source "$(dirname "$0")/lib/cost-estimator.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -187,6 +191,10 @@ echo "  GitHub Org:      $GITHUB_ORG"
 echo "  Repository:      $REPO_NAME"
 echo "  Output Dir:      $PROJECT_DIR"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Display cost estimate
+display_inline_cost 3
 echo ""
 
 # Check prerequisites
@@ -862,6 +870,10 @@ if [ "$DRY_RUN" = true ]; then
     echo "  • Billing alerts (\$15 warning, \$25 budget)"
     echo "  • Complete project structure with CDK setup"
     echo ""
+
+    # Display cost breakdown for dry-run
+    display_dry_run_costs 3
+
     echo -e "${BLUE}To execute this setup for real:${NC}"
     echo "  Run the same command without --dry-run flag"
 else
@@ -915,5 +927,11 @@ echo -e "${BLUE}Generated Files Location:${NC}"
 echo "  All project files have been created in:"
 echo "  ${CYAN}$PROJECT_DIR${NC}"
 echo ""
+
+# Display detailed cost breakdown at the end (only for non-dry-run)
+if [ "$DRY_RUN" != true ]; then
+    display_cost_breakdown 3 true
+fi
+
 echo -e "${GREEN}Happy building! 🚀${NC}"
 echo ""
