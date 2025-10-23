@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/damon-houk/aws-multi-account-bootstrap/v2/internal/cli/config"
+	"github.com/damon-houk/aws-multi-account-bootstrap/v2/internal/cli/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -80,61 +82,74 @@ func init() {
 }
 
 func runCreate(cmd *cobra.Command, args []string) error {
-	// Get configuration
-	projectCode := viper.GetString("project_code")
-	email := viper.GetString("email")
-	ouID := viper.GetString("ou_id")
-	githubOrg := viper.GetString("github.org")
-	repoName := viper.GetString("github.repo_name")
-	dryRun := viper.GetBool("dry_run")
-	interactive := viper.GetBool("interactive") && !viper.GetBool("non_interactive")
-	jsonOutput := viper.GetBool("json")
+	// Build initial configuration from viper
+	cfg := &config.Config{
+		ProjectCode: viper.GetString("project_code"),
+		EmailPrefix: viper.GetString("email"),
+		OUID:        viper.GetString("ou_id"),
+		GitHub: config.GitHubConfig{
+			Org:      viper.GetString("github.org"),
+			RepoName: viper.GetString("github.repo_name"),
+			Token:    viper.GetString("github.token"),
+		},
+		AWS: config.AWSConfig{
+			Profile: viper.GetString("aws.profile"),
+			Region:  viper.GetString("aws.region"),
+		},
+		DryRun:         viper.GetBool("dry_run"),
+		Interactive:    viper.GetBool("interactive") && !viper.GetBool("non_interactive"),
+		NonInteractive: viper.GetBool("non_interactive"),
+		JSONOutput:     viper.GetBool("json"),
+	}
 
-	if dryRun {
+	if cfg.DryRun {
 		fmt.Println("🔍 DRY RUN MODE - No resources will be created")
 		fmt.Println()
 	}
 
-	if interactive {
-		// TODO: Launch Bubbletea TUI wizard
-		fmt.Println("🎨 Interactive TUI wizard coming soon!")
-		fmt.Println("For now, use --non-interactive with configuration flags.")
-		return fmt.Errorf("interactive mode not yet implemented")
-	}
+	// Interactive mode - launch TUI wizard
+	if cfg.Interactive {
+		finalCfg, err := tui.Run(cfg)
+		if err != nil {
+			return fmt.Errorf("TUI wizard failed: %w", err)
+		}
+		cfg = finalCfg
+	} else {
+		// Non-interactive mode
+		if !cfg.JSONOutput {
+			fmt.Println("╔═══════════════════════════════════════════════════════════╗")
+			fmt.Println("║                                                           ║")
+			fmt.Println("║   AWS Multi-Account Bootstrap with GitHub CI/CD          ║")
+			fmt.Println("║                                                           ║")
+			fmt.Println("╚═══════════════════════════════════════════════════════════╝")
+			fmt.Println()
+		}
 
-	// Non-interactive mode
-	if !jsonOutput {
-		fmt.Println("╔═══════════════════════════════════════════════════════════╗")
-		fmt.Println("║                                                           ║")
-		fmt.Println("║   AWS Multi-Account Bootstrap with GitHub CI/CD          ║")
-		fmt.Println("║                                                           ║")
-		fmt.Println("╚═══════════════════════════════════════════════════════════╝")
-		fmt.Println()
-	}
+		// Validate required configuration
+		if err := cfg.Validate(); err != nil {
+			return fmt.Errorf("configuration validation failed: %w", err)
+		}
 
-	// Validate required configuration
-	if projectCode == "" || email == "" || ouID == "" || githubOrg == "" || repoName == "" {
-		return fmt.Errorf("missing required configuration: project-code, email, ou-id, github-org, repo-name")
-	}
-
-	if !jsonOutput {
-		fmt.Printf("Project Code: %s\n", projectCode)
-		fmt.Printf("Email: %s\n", email)
-		fmt.Printf("OU ID: %s\n", ouID)
-		fmt.Printf("GitHub Org: %s\n", githubOrg)
-		fmt.Printf("Repo Name: %s\n", repoName)
-		fmt.Println()
-		fmt.Println("✨ Setup complete! (placeholder - real implementation coming)")
+		if !cfg.JSONOutput {
+			fmt.Printf("Project Code: %s\n", cfg.ProjectCode)
+			fmt.Printf("Email: %s\n", cfg.EmailPrefix)
+			fmt.Printf("OU ID: %s\n", cfg.OUID)
+			fmt.Printf("GitHub Org: %s\n", cfg.GitHub.Org)
+			fmt.Printf("Repo Name: %s\n", cfg.GitHub.RepoName)
+			fmt.Println()
+		}
 	}
 
 	// TODO: Wire up domain logic and adapters
 	// TODO: Call account creation, GitHub setup, etc.
 
-	if jsonOutput {
+	if cfg.JSONOutput {
 		fmt.Println(`{
   "status": "success",
-  "message": "CLI skeleton working - full implementation coming soon"
+  "message": "Setup complete (TUI wizard working, execution coming soon)"
 }`)
+	} else {
+		fmt.Println("✨ Setup complete! (TUI wizard working, execution coming soon)")
 	}
 
 	return nil

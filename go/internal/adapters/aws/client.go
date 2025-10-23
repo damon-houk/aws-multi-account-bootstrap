@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	"github.com/damonallison/aws-multi-account-bootstrap/v2/internal/ports"
+	"github.com/damon-houk/aws-multi-account-bootstrap/v2/internal/ports"
 )
 
 // Client implements the ports.AWSClient interface using AWS SDK for Go v2.

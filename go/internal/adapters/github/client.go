@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-github/v67/github"
 	"golang.org/x/oauth2"
 
-	"github.com/damonallison/aws-multi-account-bootstrap/v2/internal/ports"
+	"github.com/damon-houk/aws-multi-account-bootstrap/v2/internal/ports"
 )
 
 // Client implements the ports.GitHubClient interface using go-github SDK.

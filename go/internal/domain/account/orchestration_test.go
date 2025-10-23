@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/damonallison/aws-multi-account-bootstrap/v2/internal/adapters/mock"
+	"github.com/damon-houk/aws-multi-account-bootstrap/v2/internal/adapters/mock"
 )
 
 // This test demonstrates Hexagonal Architecture for TESTING (not multi-cloud):
