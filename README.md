@@ -33,30 +33,29 @@ make setup-all PROJECT_CODE=XYZ EMAIL_PREFIX=email \
 
 ---
 
-### 🚀 [v2 - Go + Multi-Platform](./go) (Active Development) ⭐ **RECOMMENDED**
+### 🚀 [v2 - Go with CLI/TUI](./go) (Active Development) ⭐ **RECOMMENDED**
 
-**Status**: Alpha (in active development)
+**Status**: Alpha (~80% complete)
 **Version**: 2.0.0-alpha
-**Platforms**: CLI (TUI), Web, Mobile (iOS/Android), Desktop (Mac/Win/Linux)
 
 ```bash
-# CLI with beautiful TUI
-aws-bootstrap create --project XYZ
+# Interactive TUI wizard
+./bin/aws-bootstrap create --interactive
 
-# API Server for web/mobile apps
-aws-bootstrap serve --port 8080
+# Or with flags
+./bin/aws-bootstrap create --project XYZ --email you@gmail.com ...
 ```
 
 **Why v2?**
-- ✅ Beautiful terminal UI (Bubbletea)
-- ✅ Web dashboard
-- ✅ Mobile apps (React Native)
-- ✅ Desktop app (Wails)
-- ✅ Strong typing (Go + TypeScript)
-- ✅ Single binary distribution
-- ✅ Better testing
+- ✅ Beautiful terminal UI (Bubbletea wizard)
+- ✅ Template browser (66+ CloudFormation templates)
+- ✅ AWS SDK v2 integration
+- ✅ GitHub API integration
+- ✅ Strong typing (Go)
+- 🚧 Single binary distribution (almost ready)
+- ✅ Fast tests (<100ms, no AWS credentials)
 
-[→ v2 Documentation](./go/README.md) *(coming soon)*
+[→ v2 Documentation](./go/README.md)
 
 ---
 
@@ -156,34 +155,20 @@ aws-multi-account-bootstrap/
 ├── bash/                    # v1 - Bash (maintenance mode)
 │   ├── scripts/             # Bash scripts
 │   ├── tests/               # Test suite (54 tests)
-│   ├── docs/                # v1 documentation
-│   └── README.md            # v1 guide
+│   └── docs/                # v1 documentation
 │
-├── go/                      # v2 - Go backend (active)
-│   ├── cmd/
-│   │   ├── cli/             # CLI tool
-│   │   └── server/          # API server
+├── go/                      # v2 - Go CLI (active)
+│   ├── cmd/aws-bootstrap/   # CLI entry point
 │   ├── internal/
-│   │   ├── domain/          # Business logic
-│   │   ├── ports/           # Interfaces
-│   │   └── adapters/        # AWS/GitHub implementations
-│   ├── api/                 # OpenAPI spec
-│   └── README.md            # v2 guide
-│
-├── apps/                    # Frontend applications
-│   ├── web/                 # React web dashboard
-│   ├── mobile/              # React Native app
-│   └── desktop/             # Wails desktop app
-│
-├── packages/                # Shared TypeScript
-│   ├── client/              # API client
-│   ├── core/                # Shared business logic
-│   └── ui/                  # UI components
+│   │   ├── domain/          # Pure business logic
+│   │   ├── ports/           # Interfaces (AWS-specific)
+│   │   ├── adapters/        # Implementations (aws/, github/, templates/, mock/)
+│   │   └── cli/tui/         # Bubbletea wizard
+│   └── README.md
 │
 └── docs/                    # Shared documentation
-    ├── architecture/        # Architecture decisions
-    ├── migration/           # Migration guides
-    └── guides/              # How-to guides
+    ├── architecture/        # HEXAGONAL_ARCHITECTURE.md
+    └── migration/           # BASH_TO_GO.md
 ```
 
 ---
@@ -211,11 +196,12 @@ Both versions use **Hexagonal Architecture** (Ports & Adapters):
 
 **Benefits**:
 - ✅ Easy to test (mock adapters, no AWS credentials needed)
-- ✅ Easy to extend (add Azure, GitLab, GCP support)
 - ✅ Clear separation of concerns
-- ✅ Business logic independent of infrastructure
+- ✅ Business logic separate from infrastructure
 
-See [Architecture Documentation](./docs/architecture/HEXAGONAL_ARCHITECTURE.md) *(coming soon)* for details.
+See [Architecture Documentation](./docs/architecture/HEXAGONAL_ARCHITECTURE.md) for details.
+
+**Note**: This tool is AWS-specific by design. Azure/GCP have different multi-account patterns and need separate tools.
 
 ---
 
@@ -227,88 +213,35 @@ Both versions can coexist. You can:
 2. **Try v2 in parallel** - Test while keeping v1
 3. **Migrate fully** - When v2 reaches stable
 
-See [Migration Guide](./docs/migration/BASH_TO_GO.md) *(coming soon)* for details.
+See [Migration Guide](./docs/migration/BASH_TO_GO.md) for details.
 
 ---
 
 ## 💻 Development
 
-### Working on Go backend (v2)
+### v2 (Go)
 
 ```bash
 cd go
 
-# Install dependencies
-go mod download
-
-# Run tests
+# Run tests (fast, <100ms)
 make test
 
 # Build CLI
 make build
 
-# Run CLI
-./bin/aws-bootstrap --help
-
-# Start API server
-./bin/aws-bootstrap serve
+# Run wizard
+./bin/aws-bootstrap create --interactive
 ```
 
-### Working on frontends (v2)
-
-```bash
-# Install dependencies (from root)
-pnpm install
-
-# Start web app (development)
-cd apps/web
-pnpm dev
-
-# Start mobile app
-cd apps/mobile
-pnpm start
-
-# Build all apps
-pnpm build
-```
-
-### Working on bash (v1)
+### v1 (Bash)
 
 ```bash
 cd bash
 
 # Run tests
-./tests/test-config-simple.sh        # Config system (24 tests)
-./tests/test-mock-adapters.sh        # Mock adapters (30 tests)
-
-# Test setup (dry-run)
-./scripts/setup-complete-project.sh --dry-run
-```
-
----
-
-## 🧪 Testing
-
-### Go Tests (v2)
-```bash
-cd go
-make test                    # Unit tests
-make test-integration        # Integration tests (requires AWS)
-make test-coverage           # Coverage report
-```
-
-### Bash Tests (v1)
-```bash
-cd bash
-./tests/test-config-simple.sh       # Config system (24 tests)
-./tests/test-mock-adapters.sh       # Mock adapters (30 tests)
-```
-
-### Frontend Tests (v2)
-```bash
-pnpm test                    # All frontend tests
-pnpm test --filter=web       # Web app only
-pnpm test --filter=mobile    # Mobile app only
+./tests/test-config-simple.sh        # 24 tests
+./tests/test-mock-adapters.sh        # 30 tests
 ```
 
 ---
@@ -330,57 +263,50 @@ Typical monthly costs for small projects:
 
 ## 🗺️ Roadmap
 
-### v1 (Bash) - Maintenance Mode
-- ✅ v1.0.0 - Stable release
-- 🔄 Bug fixes only
-- ❌ No new features
+### v1 (Bash)
+- ✅ Stable, production-ready
+- 🔄 Maintenance mode (bug fixes only)
 
-### v2 (Go) - Active Development
+### v2 (Go) - Current Status (~80% complete)
 
-**Phase 1: Foundation (Current)**
-- 🚧 Port domain logic from bash to Go
-- 🚧 Create adapters (AWS, GitHub)
-- 🚧 Build basic CLI
+**Completed** ✅:
+- Hexagonal architecture
+- AWS adapter (Organizations, IAM, STS, Budgets, CloudWatch, SNS, CDK)
+- GitHub adapter (repos, branches, secrets, environments, workflows, OIDC)
+- Template browser (66+ CloudFormation templates)
+- Prerequisites checker
+- Bubbletea TUI wizard
 
-**Phase 2: Enhanced UX (Q1 2026)**
-- 📅 CLI with beautiful TUI (Bubbletea)
-- 📅 API server (REST/GraphQL)
-- 📅 Web dashboard (React)
+**In Progress** 🚧:
+- Template parser (🔴 blocker: hangs on CloudFormation YAML)
+- Wizard execution step
 
-**Phase 3: Multi-Platform (Q2 2026)**
-- 📅 Mobile apps (iOS/Android with React Native)
-- 📅 Desktop app (Mac/Win/Linux with Wails)
-- 📅 Full documentation
-
-**Phase 4: v2.0.0 Stable (Q3 2026)**
-- 📅 Production-ready
-- 📅 Feature parity with v1
-- 📅 Multi-cloud support (Azure, GCP)
-- 📅 GitLab support
+**Next**:
+- Fix template parser
+- Complete execution
+- Single binary distribution
+- v2.0.0-alpha release
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](./bash/CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](./bash/CONTRIBUTING.md).
 
-**Development priorities** (v2):
-1. ✅ Hexagonal architecture foundation
-2. 🚧 Port domain logic to Go
-3. 🚧 Create Go adapters (AWS, GitHub)
-4. 📅 Build CLI with TUI
-5. 📅 Create API server
-6. 📅 Build web dashboard
+**v2 priorities**:
+1. Fix template parser hang
+2. Complete wizard execution
+3. Integration tests
+4. Binary distribution
 
 ---
 
 ## 📚 Documentation
 
 - **v1 (Bash)**: [bash/README.md](./bash/README.md)
-- **v2 (Go)**: [go/README.md](./go/README.md) *(coming soon)*
-- **Architecture**: [docs/architecture/](./docs/architecture/) *(coming soon)*
-- **Migration**: [docs/migration/BASH_TO_GO.md](./docs/migration/) *(coming soon)*
-- **API Docs**: Coming soon in `go/api/`
+- **v2 (Go)**: [go/README.md](./go/README.md)
+- **Architecture**: [docs/architecture/HEXAGONAL_ARCHITECTURE.md](./docs/architecture/HEXAGONAL_ARCHITECTURE.md)
+- **Migration**: [docs/migration/BASH_TO_GO.md](./docs/migration/BASH_TO_GO.md)
 
 ---
 
