@@ -63,22 +63,3 @@ go/vendor/
 *.out
 go.work
 go.work.sum
-
-# Monorepo
-.turbo
-pnpm-lock.yaml
-.pnpm-store/
-
-# Frontend builds
-apps/*/dist
-apps/*/build
-apps/*/.next
-apps/*/.expo
-apps/*/.expo-shared
-
-# Mobile
-apps/mobile/ios/Pods/
-apps/mobile/android/.gradle/
-apps/mobile/android/build/
-*.apk
-*.ipa
