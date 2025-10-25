@@ -1,25 +1,18 @@
-# Hexagonal Architecture (Ports & Adapters)
+# Hexagonal Architecture
 
-This document explains the hexagonal architecture implementation in AWS Multi-Account Bootstrap v2.
+> Concise reference for AWS Multi-Account Bootstrap v2 architecture.
 
-## Overview
+## Pattern
 
-Hexagonal Architecture (also known as Ports and Adapters) separates business logic from infrastructure concerns. This provides testability and maintainability benefits.
+**Domain (pure)** → **Ports (interfaces)** → **Adapters (implementations)**
 
-## Our Implementation
+**Purpose**: Testing without AWS credentials (not for multi-cloud abstraction)
 
-### Key Decision: AWS-Specific, Not Multi-Cloud
+## Key Decision: AWS-Specific Design
 
-**We are honest about our scope:**
-- This tool is designed specifically for AWS
-- We do NOT abstract cloud providers generically
-- Azure and GCP have fundamentally different multi-account patterns
-- False abstractions create complexity without value
-
-**Why use Hexagonal Architecture then?**
-- **Testing**: Mock adapters enable fast tests without AWS credentials
-- **Separation**: Business logic stays separate from AWS SDK details
-- **Clarity**: Makes dependencies explicit
+- This tool is **AWS-only** (not multi-cloud)
+- Azure/GCP have different multi-account patterns - they need separate tools
+- We use hexagonal for **testing**, not for cloud abstraction
 
 ## Structure
 
@@ -42,252 +35,72 @@ go/
 
 ## Components
 
-### 1. Ports (Interfaces)
+### Ports (Interfaces)
 
-Ports define the contract between domain logic and external systems.
-
-**Example: `ports/aws.go`**
+Define contracts between domain and infrastructure. Deliberately AWS-specific (not cloud-agnostic).
 
 ```go
+// ports/aws.go
 type AWSClient interface {
     CreateAccount(ctx context.Context, req AWSCreateAccountRequest) (string, error)
-    BootstrapCDK(ctx context.Context, accountID, region, trustAccountID string) error
+    BootstrapCDK(ctx context.Context, accountID, region string) error
     CreateBudget(ctx context.Context, req AWSCreateBudgetRequest) error
-    // ... AWS-specific operations
 }
 ```
 
-**Key Points:**
-- Deliberately AWS-specific
-- Not pretending to be cloud-agnostic
-- Includes AWS-only concepts (CDK, Organizations, Budgets)
+### Domain (Business Logic)
 
-### 2. Domain Logic
-
-Pure business rules with no infrastructure dependencies.
-
-**Example: `domain/account/naming.go`**
+Pure Go with zero infrastructure dependencies.
 
 ```go
+// domain/account/naming.go
 func GenerateAccountName(projectCode string, env Environment) string {
     return fmt.Sprintf("%s_%s", projectCode, strings.ToUpper(string(env)))
 }
-
-func GenerateAccountEmail(emailPrefix, projectCode string, env Environment) string {
-    prefix := strings.TrimSuffix(emailPrefix, "@gmail.com")
-    return fmt.Sprintf("%s+%s-%s@gmail.com",
-        prefix,
-        strings.ToLower(projectCode),
-        strings.ToLower(string(env)))
-}
 ```
 
-**Key Points:**
-- Zero AWS imports
-- Pure Go functions
-- Easily testable
-- Business rules are explicit
+### Adapters (Implementations)
 
-### 3. Adapters (Implementations)
-
-Adapters implement the port interfaces.
-
-#### Mock Adapter (for testing)
-
-**Example: `adapters/mock/aws.go`**
-
+**Mock** (testing):
 ```go
-type AWSClient struct {
-    accounts       map[string]*mockAWSAccount
-    accountsByName map[string]string
-    operations     []string  // Records what was called
-    nextAccountID  int64
-}
-
-func (m *AWSClient) CreateAccount(ctx context.Context, req ports.AWSCreateAccountRequest) (string, error) {
-    accountID := fmt.Sprintf("%012d", m.nextAccountID)
-    m.nextAccountID++
-
-    m.accounts[accountID] = &mockAWSAccount{
-        ID:    accountID,
-        Name:  req.Name,
-        Email: req.Email,
-    }
-
-    return accountID, nil
-}
+// adapters/mock/aws.go - Returns fake data, <100ms, no AWS credentials
 ```
 
-**Benefits:**
-- Tests run in <100ms
-- No AWS credentials needed
-- Deterministic behavior
-- Can verify business logic worked correctly
-
-#### Real AWS Adapter (TODO)
-
-Will use AWS SDK for Go v2:
-
+**Real** (✅ Complete):
 ```go
-type AWSClient struct {
-    orgsClient     *organizations.Client
-    iamClient      *iam.Client
-    budgetsClient  *budgets.Client
-    // ... other AWS clients
-}
+// adapters/aws/ - Uses AWS SDK v2 (Organizations, IAM, STS, Budgets, etc.)
 ```
 
-## Testing Philosophy
+## Testing
 
-### Unit Tests
-
-Use mock adapters to test business logic in isolation:
-
-```go
-func TestCreateAllAccounts(t *testing.T) {
-    // Create mock AWS client
-    mockAWS := mock.NewAWSClient()
-
-    // Configure business rules
-    config := Config{
-        ProjectCode: "TPA",
-        EmailPrefix: "user",
-        OUID:        "ou-813y-8teevv2l",
-    }
-
-    // Call domain logic
-    accounts, err := CreateAllAccounts(ctx, mockAWS, config)
-
-    // Verify results
-    assert.NoError(t, err)
-    assert.Len(t, accounts, 3)  // dev, staging, prod
-
-    // Verify mock was called correctly
-    ops := mockAWS.GetOperations()
-    assert.Contains(t, ops, "CreateAccount(TPA_DEV, ...)")
-}
+**Unit tests** (fast, no credentials):
+```bash
+make test  # <100ms, uses mocks
 ```
 
-**Results:**
-- ✅ 14 tests passing
-- ✅ <100ms execution time
-- ✅ No AWS credentials required
-
-### Integration Tests (Future)
-
-Will test real AWS SDK integration:
-
-```go
-func TestAWSAdapter_CreateAccount_Integration(t *testing.T) {
-    if testing.Short() {
-        t.Skip("Skipping integration test")
-    }
-
-    // Use real AWS client
-    awsClient := aws.NewClient(cfg)
-
-    // Test actual AWS operations
-    // ...
-}
+**Integration tests** (optional, requires AWS):
+```bash
+# Not yet implemented
 ```
 
 ## Benefits
 
-### 1. Fast Tests
+- **Fast tests** - <100ms, no network calls
+- **No credentials needed** - Developers can test locally
+- **Clear separation** - Business logic separate from AWS SDK
+- **Maintainable** - Easy to change business rules or upgrade SDK
 
-```bash
-$ make test
-Running tests...
-ok github.com/damonallison/.../account 0.096s
-```
+## What This is NOT
 
-- No network calls
-- No AWS API latency
-- Instant feedback
+**NOT multi-cloud abstraction:**
+- AWS Organizations ≠ Azure Management Groups ≠ GCP Folders
+- AWS CDK ≠ Azure ARM ≠ GCP Deployment Manager
+- We use hexagonal for **testing**, not for multi-cloud abstraction
 
-### 2. Test Without Credentials
-
-Developers can:
-- Run full test suite locally
-- Verify business logic
-- Contribute without AWS account
-
-### 3. Clear Separation
-
-Business rules are explicit and separate from:
-- AWS SDK quirks
-- Network calls
-- Rate limiting
-- Authentication
-
-### 4. Maintainability
-
-Easy to:
-- Understand what the code does
-- Change business rules
-- Upgrade AWS SDK version
-- Add new AWS operations
-
-## What This Is NOT
-
-### Not Multi-Cloud Abstraction
-
-We **deliberately** do not abstract AWS behind a generic "cloud" interface because:
-
-1. **AWS Organizations ≠ Azure Management Groups ≠ GCP Folders**
-   - Different concepts
-   - Different capabilities
-   - Different best practices
-
-2. **AWS CDK ≠ Azure ARM ≠ GCP Deployment Manager**
-   - Different tooling
-   - Different approaches
-   - Cannot be abstracted
-
-3. **False Abstractions Create Problems**
-   - Leaky abstractions
-   - Lowest common denominator
-   - Complexity without benefit
-
-### Honest Engineering
-
-We use hexagonal architecture for **testing**, not for **multi-cloud dreams**.
-
-If you need Azure or GCP:
-- Build a separate tool
-- Don't try to abstract them together
-- Each cloud is different - embrace it
-
-## Evolution
-
-As the project grows, we might add:
-
-1. **More Ports**
-   - GitHub API port
-   - GitLab API port (for CI/CD)
-   - Terraform Cloud API port
-
-2. **More Adapters**
-   - LocalStack adapter (for local testing)
-   - Fake adapter (for demos)
-
-3. **More Domain Logic**
-   - Billing domain
-   - Security domain
-   - Compliance domain
-
-But we will **never** create a generic "CloudProvider" that pretends AWS, Azure, and GCP are the same.
-
-## References
-
-- [Hexagonal Architecture (Alistair Cockburn)](https://alistair.cockburn.us/hexagonal-architecture/)
-- [Ports & Adapters Pattern](https://herbertograca.com/2017/09/14/ports-adapters-architecture/)
-- [Go Project Layout](https://github.com/golang-standards/project-layout)
-- [AWS SDK for Go v2](https://aws.github.io/aws-sdk-go-v2/)
+**If you need Azure/GCP**: Build separate tools. Each cloud is different - embrace it.
 
 ## See Also
 
 - [Go v2 README](../../go/README.md)
-- [AWS Client Port](../../go/internal/ports/aws.go)
-- [Domain Logic](../../go/internal/domain/account/)
-- [Mock Adapters](../../go/internal/adapters/mock/)
+- [AWS Adapter](../../go/internal/adapters/aws/README.md)
+- [GitHub Adapter](../../go/internal/adapters/github/README.md)
