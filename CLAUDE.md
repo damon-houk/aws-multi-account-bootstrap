@@ -1,527 +1,187 @@
-# AI Assistant Context for AWS Multi-Account Bootstrap
+# AI Assistant Context
 
-> **IMPORTANT**: Keep this file updated when making significant changes. This provides context for AI assistants (Claude, GitHub Copilot, etc.) working on this codebase.
+> **Purpose**: Terse, optimized context for AI assistants working on this codebase.
 
-## Project Overview
+## 🔥 CURRENT STATUS (2025-10-25) - READ THIS FIRST
 
-AWS infrastructure automation tool that creates a production-ready multi-account setup with CI/CD in one command.
+| Component | Status | Location | Notes |
+|-----------|--------|----------|-------|
+| **v1 (Bash)** | ✅ Stable | `bash/` | 54 tests, maintenance only |
+| **v2 Go - AWS Adapter** | ✅ Complete | `go/internal/adapters/aws/` | Full AWS SDK v2 integration |
+| **v2 Go - GitHub Adapter** | ✅ Complete | `go/internal/adapters/github/` | Full go-github integration |
+| **v2 Go - CLI + TUI** | 🚧 80% | `go/cmd/aws-bootstrap/` | Bubbletea wizard |
+| **Template Browser** | ✅ Working | `go/internal/adapters/templates/` | 66+ cloudonaut/widdix templates |
+| **Cost Estimation** | 🔴 BLOCKED | `go/internal/domain/templates/` | **Parser hangs on CloudFormation YAML** |
 
-- **Status**: Monorepo with two versions
-- **v1 (Bash)**: Stable, maintenance mode (1.x)
-- **v2 (Go)**: Active development, alpha (2.0.0-alpha)
-- **Purpose**: Simplify AWS multi-account setup for startups/small teams
+**CRITICAL BLOCKER**: `analyzer.AnalyzeTemplate()` hangs indefinitely when parsing CloudFormation YAML from remote templates. Currently disabled, falling back to bootstrap-only estimates.
 
-## Major Change (2025-10-22)
+**Next Priority**: Fix template parser hang - add timeout + debug logging to `go/internal/domain/templates/analyzer.go`
 
-**Restructured as monorepo** with bash v1 (maintenance) and Go v2 (active development).
+## Quick Reference
 
-**Rationale**:
-- Need better UI/UX (web, mobile, desktop)
-- Go provides better testing, type safety, single binary distribution
-- Bash v1 works well but limited (no GUI, hard to test, hard to distribute)
-- Hexagonal architecture from bash provides blueprint for Go version
+**Purpose**: AWS multi-account setup (dev/staging/prod) + GitHub CI/CD in one command
+**Target**: Startups, solo devs, small teams (2-10 people)
+**Architecture**: Hexagonal (Ports & Adapters) - AWS-specific, not multi-cloud
+**Versions**: v1 (Bash, maintenance) | v2 (Go, active development)
 
-**Migration**: See `.work/MIGRATION_PLAN_V2.md` for complete plan
+## Quick Commands
 
----
+```bash
+# v1 (Bash) - Maintenance
+cd bash
+./tests/test-config-simple.sh        # 24 tests
+./tests/test-mock-adapters.sh        # 30 tests
+
+# v2 (Go) - Active Development
+cd go
+make test                             # Unit tests (<100ms)
+make build                            # Build CLI binary
+./bin/aws-bootstrap create --interactive  # Test TUI wizard
+
+# Debug wizard
+./bin/aws-bootstrap create --interactive 2>&1 | tee /tmp/wizard.log
+
+# Clear caches if needed
+rm -rf ~/.aws-bootstrap/template-cache/
+rm -rf ~/.aws-bootstrap/pricing-cache/
+```
 
 ## Repository Structure
 
 ```
-aws-multi-account-bootstrap/          # Monorepo root
-├── bash/                             # v1 - Bash (maintenance mode)
-│   ├── scripts/                      # Bash scripts
-│   ├── tests/                        # Test suite (54 tests)
-│   ├── docs/                         # v1 documentation
-│   ├── Makefile                      # v1 build commands
-│   └── README.md                     # v1 user guide
-│
-├── go/                               # v2 - Go backend (active)
-│   ├── cmd/
-│   │   ├── cli/                      # CLI tool (future)
-│   │   └── server/                   # API server (future)
-│   ├── internal/
-│   │   ├── domain/                   # Pure business logic
-│   │   │   ├── account/              # Multi-account setup
-│   │   │   ├── cicd/                 # CI/CD configuration
-│   │   │   └── cost/                 # Cost management
-│   │   ├── ports/                    # Interfaces
-│   │   │   ├── cloudprovider.go      # Cloud operations
-│   │   │   └── vcsprovider.go        # VCS operations
-│   │   └── adapters/                 # Implementations
-│   │       ├── aws/                  # AWS implementations
-│   │       ├── github/               # GitHub implementations
-│   │       └── mock/                 # Testing mocks
-│   ├── api/                          # OpenAPI spec (future)
-│   ├── go.mod                        # Go dependencies
-│   ├── Makefile                      # Go build commands
-│   └── README.md                     # v2 user guide (future)
-│
-├── apps/                             # Frontend applications (future)
-│   ├── web/                          # React web dashboard
-│   ├── mobile/                       # React Native (iOS/Android)
-│   └── desktop/                      # Wails (Mac/Win/Linux)
-│
-├── packages/                         # Shared TypeScript (future)
-│   ├── client/                       # API client
-│   ├── core/                         # Shared business logic
-│   └── ui/                           # UI components
-│
-├── docs/                             # Shared documentation (future)
-│   ├── architecture/                 # Architecture decisions
-│   ├── migration/                    # Bash → Go migration guide
-│   └── guides/                       # How-to guides
-│
-├── .work/                            # Session artifacts (gitignored)
-├── output/                           # Generated projects (gitignored)
-├── package.json                      # Root package.json (minimal, for Prettier)
-├── Makefile                          # Root Makefile (orchestrates bash + Go)
-├── README.md                         # Root README (monorepo overview)
-└── CLAUDE.md                         # This file
+bash/                    # v1 - Maintenance only (54 tests passing)
+  scripts/, tests/, docs/, Makefile
+
+go/                      # v2 - Active development
+  cmd/aws-bootstrap/     # CLI entry (Cobra + Bubbletea)
+  internal/
+    domain/              # Pure business logic
+      account/           # Account naming, orchestration
+      templates/         # Template analysis (🔴 BLOCKER: analyzer.go hangs)
+      cost/              # Cost estimation
+    ports/               # Interfaces
+      aws.go, github.go, template_loader.go, prerequisite_checker.go
+    adapters/            # Implementations
+      aws/               # ✅ Complete - AWS SDK v2
+      github/            # ✅ Complete - go-github
+      templates/         # ✅ Complete - GitHub API + filesystem
+      system/            # ✅ Complete - Prerequisites checker
+      mock/              # For testing
+    cli/tui/             # 🚧 80% - Bubbletea wizard
+      wizard.go          # Main wizard logic (async ops, 7-step flow)
+      views.go           # UI views for each step
+
+docs/                    # Shared documentation
+  architecture/HEXAGONAL_ARCHITECTURE.md
+  migration/BASH_TO_GO.md
+
+.work/                   # Session notes (gitignored)
 ```
 
----
+## Git Conventions
 
-## Development Conventions
-
-### Git Commits
-
-Always end commit messages with:
-```
-AI: Claude Code
-```
-
-### Versioning
-
-- **v1 (Bash)**: 1.x.x (maintenance, bug fixes only)
-- **v2 (Go)**: 2.0.0-alpha, 2.0.0-beta, 2.0.0 (active development)
-- See `bash/VERSIONING.md` for v1 strategy
-
-### Working on v1 (Bash)
-
-```bash
-cd bash
-
-# Run tests
-./tests/test-config-simple.sh        # Config system (24 tests)
-./tests/test-mock-adapters.sh        # Mock adapters (30 tests)
-
-# Test setup
-./scripts/setup-complete-project.sh --dry-run
-
-# Build
-make check-prerequisites
-```
-
-**Status**: Maintenance only
-- ✅ Bug fixes
-- ✅ Security updates
-- ❌ No new features
-- ❌ No major refactoring
-
-### Working on v2 (Go)
-
-```bash
-cd go
-
-# Initialize (first time)
-go mod init github.com/damon-houk/aws-multi-account-bootstrap/v2
-go mod download
-
-# Run tests
-make test
-
-# Build CLI
-make build
-
-# Run CLI
-./bin/aws-bootstrap --help
-```
-
-**Status**: Active development
-- ✅ Go adapters complete (AWS + GitHub)
-- 🚧 Building CLI with Bubbletea TUI
-- 📅 Porting remaining domain logic from bash
-- 📅 Single binary distribution
-
-### Working on Frontends (Future)
-
-*Will be added when frontend apps are built. At that time, we'll add:*
-- `pnpm` workspaces for TypeScript packages
-- `turborepo` for build orchestration
-- Frontend-specific tooling (Vite, React, React Native, etc.)
+**Commit suffix**: `AI: Claude Code`
+**Versioning**: v1 = 1.x.x (maintenance) | v2 = 2.0.0-alpha (active)
 
 ---
 
 ## Architecture: Hexagonal (Ports & Adapters)
 
-Both v1 and v2 use **Hexagonal Architecture**:
+**Pattern**: Domain (pure) → Ports (interfaces) → Adapters (AWS SDK, GitHub API, mocks)
 
-```
-┌─────────────────────────────────────────┐
-│          Domain Logic (Pure)            │
-│   Account Setup, CI/CD, Cost Mgmt      │
-│   • No AWS CLI calls                    │
-│   • No GitHub CLI calls                 │
-│   • Pure business rules                 │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│        Ports (Interfaces)               │
-│   CloudProvider, VCSProvider            │
-│   • Define contracts                    │
-│   • Language-agnostic design            │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│        Adapters (Implementations)       │
-│   AWS, GitHub, Mock (testing)           │
-│   • Implement port interfaces           │
-│   • Handle infrastructure details       │
-└─────────────────────────────────────────┘
-```
+**Why**: Testing without AWS credentials (not for multi-cloud abstraction)
 
-**Benefits**:
-- ✅ Easy to test (mock adapters, no AWS credentials)
-- ✅ Easy to extend (add Azure, GitLab, GCP)
-- ✅ Clear separation of concerns
-- ✅ Business logic independent of infrastructure
-- ✅ v1 architecture directly translates to v2
+**Structure**:
+- `go/internal/domain/` - Pure business logic (no infrastructure)
+- `go/internal/ports/` - Interface definitions
+- `go/internal/adapters/` - Implementations (aws/, github/, templates/, system/, mock/)
 
-**Key Files (v1)**:
-- `bash/scripts/ports/` - Port definitions
-- `bash/scripts/adapters/aws/` - AWS implementations
-- `bash/scripts/adapters/github/` - GitHub implementations
-- `bash/scripts/adapters/mock/` - Testing mocks
-- `bash/tests/test-mock-adapters.sh` - Port validation (30 tests)
-
-**Key Files (v2)**:
-- `go/internal/ports/` - Go interfaces (CloudProvider, GitHubClient)
-- `go/internal/adapters/aws/` - AWS SDK implementations
-- `go/internal/adapters/github/` - go-github implementations
-- `go/internal/adapters/mock/` - Testing mocks (coming)
+**Key Insight**: AWS-specific design. This tool is for AWS only. Azure/GCP need separate tools.
 
 ---
 
 ## What the Tool Does
 
-Creates a production-ready AWS infrastructure:
+Creates production-ready AWS multi-account infrastructure:
+- **3 AWS Accounts**: Dev, Staging, Prod
+- **Naming**: `PROJECT_CODE_ENV` (e.g., `TPA_DEV`), emails use Gmail + addressing
+- **CI/CD**: GitHub Actions with OIDC (no stored credentials)
+- **Branch strategy**: `develop`→Dev, `main`→Staging, `tag`→Prod (manual approval)
+- **Cost alerts**: $15 warning, $25 budget per environment
+- **Infrastructure**: AWS CDK bootstrap, CloudFormation templates, semantic versioning
 
-### 3 AWS Accounts
-- **Dev** - Development environment
-- **Staging** - Pre-production testing
-- **Prod** - Production environment
-
-### Naming Convention
-- Account names: `${PROJECT_CODE}_${ENV_UPPER}` (e.g., `TPA_DEV`)
-- Emails: `${email}+${project_code}-${env}@gmail.com`
-- PROJECT_CODE: 3-character identifier
-
-### Automated CI/CD
-- GitHub Actions with OIDC (no stored credentials)
-- Branch strategy:
-  - `develop` → Dev (auto-deploy)
-  - `main` → Staging (auto-deploy)
-  - Production (manual approval)
-
-### Cost Management
-- Billing alerts: $15 warning
-- Monthly budgets: $25 limit per environment
-- CloudWatch alarms + AWS Budgets
-
-### Infrastructure
-- AWS CDK bootstrap in all accounts
-- CloudFormation templates
-- Semantic versioning
+**Estimated cost**: $40-80/month baseline (add compute costs for your app)
 
 ---
 
-## Current Development Status
+## v2 Development Progress
 
-### v1 (Bash) - Completed ✅
+**Completed (2025-10-22)**:
+- ✅ Hexagonal architecture with ports/adapters
+- ✅ AWS adapter (Organizations, IAM, STS, Budgets, CloudWatch, SNS, CDK)
+- ✅ GitHub adapter (repos, branches, secrets, environments, workflows, OIDC)
+- ✅ Template loader (66+ cloudonaut/widdix CloudFormation templates)
+- ✅ Prerequisites checker (AWS CLI, GitHub CLI, CDK CLI)
 
-**Architecture**: Hexagonal (Ports & Adapters)
-- ✅ Ports defined (cloud, VCS)
-- ✅ Mock adapters (testing)
-- ✅ AWS adapters (4 adapters)
-- ✅ GitHub adapters (2 adapters)
-- ✅ 54 tests passing (24 config + 30 adapter)
+**In Progress (2025-10-23, ~80% complete)**:
+- 🚧 CLI with Bubbletea TUI (7-step wizard: Category → Template → Profile → Cost → Bootstrap → Prerequisites → Config → Review → Execute)
+- 🚧 Async operations with spinners
+- 🚧 Error handling and recovery
+- 🔴 **BLOCKER**: Template analyzer hangs on CloudFormation YAML parsing (workaround: bootstrap-only estimates)
 
-**Features**: All complete
-- ✅ Multi-account creation
-- ✅ CDK bootstrap
-- ✅ GitHub CI/CD with OIDC
-- ✅ Billing alerts
-- ✅ Configuration system (YAML/JSON/env)
-- ✅ Dry-run mode
-- ✅ Cost estimation
-
-### v2 (Go) - In Progress 🚧
-
-**Phase 1: Repository Restructuring** *(completed)*
-- ✅ Move bash to `bash/` subdirectory
-- ✅ Create monorepo structure (simple, no turborepo)
-- ✅ Set up Makefile orchestration
-- ✅ Update README.md and CLAUDE.md
-- ✅ Commit restructuring
-- ✅ Initialize Go module
-
-**Phase 2: Go Foundation** *(completed)*
-- ✅ Create Go port interfaces
-- ✅ Port domain logic (account module)
-- ✅ Create mock adapters
-- ✅ Write tests
-
-**Phase 3: Real Adapters** *(completed)*
-- ✅ Port AWS adapters to Go (completed 2025-10-22)
-  - ✅ AWS Organizations (account creation, management)
-  - ✅ AWS IAM (OIDC providers, GitHub Actions roles)
-  - ✅ AWS STS (role assumption, caller identity)
-  - ✅ AWS Budgets (cost management)
-  - ✅ AWS CloudWatch (billing alarms)
-  - ✅ AWS SNS (notifications)
-  - ✅ AWS CDK (bootstrap)
-- ✅ Port GitHub adapters to Go (completed 2025-10-22)
-  - ✅ Repository operations (create, exists, delete, default branch)
-  - ✅ Branch protection (reviews, status checks)
-  - ✅ Secrets & Variables (repo-level, environment-level with NaCl encryption)
-  - ✅ Environments (deployment environments with reviewers)
-  - ✅ Workflows (create, enable, commit to repo)
-  - ✅ OIDC setup (cloud provider authentication)
-  - ✅ Git operations (init, push)
-  - ✅ Releases (create releases and tags)
-- 📅 Integration tests
-
-**Phase 4: CLI with TUI** *(current - starting)*
-- 📅 Create CLI structure with Cobra
-- 📅 Implement Bubbletea TUI
-  - Interactive setup wizard
-  - Progress indicators and spinners
-  - Beautiful terminal output
-  - Cost estimation display
-- 📅 Configuration management with Viper
-- 📅 JSON output mode for CI/CD
+**Remaining**:
+- 📅 Fix template parser hang (add timeout, debug logging)
+- 📅 Implement execution step (create accounts, GitHub repo)
+- 📅 Add progress tracking during execution
+- 📅 Save configuration to file after completion
 - 📅 Single binary distribution
-- 📅 Shell completions (bash, zsh, fish)
-
-**Phase 5: Polish & Release** *(future)*
-- 📅 Comprehensive documentation
-- 📅 Video tutorials
-- 📅 GitHub Actions for releases
 - 📅 Homebrew formula
-- 📅 v2.0.0 stable release
-
-**Future Considerations** *(optional, based on demand)*
-- Desktop app (Wails) - local GUI, no server needed
-- Template marketplace for common setups
-- Cost dashboards and visualizations
-
----
-
-## Quick Commands
-
-### v1 (Bash)
-
-```bash
-cd bash
-
-# Setup
-make setup-all PROJECT_CODE=XYZ EMAIL_PREFIX=email \
-  OU_ID=ou-xxxx-xxxxxxxx GITHUB_ORG=org REPO_NAME=repo
-
-# Testing
-./tests/test-config-simple.sh        # 24 tests
-./tests/test-mock-adapters.sh        # 30 tests
-
-# Check prerequisites
-make check-prerequisites
-```
-
-### v2 (Go) - Coming Soon
-
-```bash
-cd go
-
-# Build
-make build
-
-# Test
-make test
-
-# Run
-./bin/aws-bootstrap create --interactive
-```
-
-### Monorepo (Root)
-
-```bash
-# Test all (bash + Go)
-make test
-
-# Test bash only
-make test-bash
-
-# Test Go only
-make test-go
-
-# Build Go
-make build-go
-
-# Pre-push checks (run before committing!)
-make pre-push
-```
-
----
-
-## Files to Update When Changing Project
-
-1. **This file** (`CLAUDE.md`) - Keep AI context current
-2. `CHANGELOG.md` - Document changes
-3. `README.md` - User-facing documentation (root)
-4. `bash/README.md` - v1 documentation (if changing bash)
-5. `go/README.md` - v2 documentation (if changing Go)
-6. Tests - Add/update as needed
-
----
-
-## Important Context
-
-- **No production users** - OK to make breaking changes
-- **v1 stable** - Can be used in production
-- **v2 in development** - Not ready for production
-- **Cost-conscious** - Target: <$100/month for small projects
-- **Simplicity first** - One command setup is core value
-- **Multi-platform goal** - CLI, Web, Mobile, Desktop
 
 ---
 
 ## Known Issues
 
-### v1 (Bash)
-- YAML support requires `yq` (optional, falls back to JSON)
-- Windows support limited (bash required)
-- Only 3 accounts (templates coming in v2)
-- No GUI (addressed in v2)
+**v1 (Bash)**:
+- YAML requires `yq` (optional, falls back to JSON)
+- Windows limited (requires bash)
 
-### v2 (Go)
-- Not yet functional (in early development)
-- No releases yet
+**v2 (Go)**:
+- 🔴 Template parser hangs on CloudFormation YAML (`go/internal/domain/templates/analyzer.go`)
+- No releases yet (development binary only)
+- Not ready for production
 
 ---
 
 ## Technology Stack
 
-### v1 (Bash)
-- **Language**: Bash 4+
-- **Dependencies**: AWS CLI, GitHub CLI, jq, yq (optional)
-- **Testing**: Custom bash test framework
-- **Distribution**: Git clone + run scripts
-
-### v2 (Go)
-- **Language**: Go 1.21+
-- **AWS SDK**: AWS SDK for Go v2
-- **GitHub SDK**: go-github/v67
-- **CLI Framework**: cobra (commands), viper (config), bubbletea (TUI)
-- **Distribution**: Single binary, cross-platform
-- **Testing**: Go test + testify
-
-### Frontends (v2) - Future
-- **Monorepo**: pnpm workspaces + Turborepo (will add when building frontends)
-- **Web**: React + Vite + TypeScript
-- **Mobile**: React Native + Expo
-- **Desktop**: Wails (Go + React)
-- **Shared**: TypeScript packages for client + logic
+**v1**: Bash 4+, AWS CLI, GitHub CLI, jq, yq (optional)
+**v2**: Go 1.21+, AWS SDK v2, go-github/v67, Cobra, Viper, Bubbletea
 
 ---
 
 ## For AI Assistants
 
-When working on this project:
+**Before starting**:
+1. Read "CURRENT STATUS" table at top
+2. Check `.work/SESSION_*` files for recent context
+3. Run tests before changes: `cd bash && ./tests/test-mock-adapters.sh` or `cd go && make test`
 
-### General
-1. Check which version you're working on (bash/ or go/)
-2. Run existing tests before making changes
-3. Update this file if making structural changes
-4. Use `.work/` for temporary artifacts
-5. Follow commit message convention (add "AI: Claude Code")
+**When working on v1**: Maintenance only - bug fixes/security updates, no new features
 
-### Working on v1 (Bash)
-1. v1 is maintenance mode - only bug fixes
-2. Don't add new features to v1
-3. Run tests: `cd bash && ./tests/test-config-simple.sh && ./tests/test-mock-adapters.sh`
-4. Validate: `cd bash && make check-prerequisites`
+**When working on v2**:
+1. Follow hexagonal architecture (keep domain pure, adapters separate)
+2. Write tests with mock adapters
+3. Check blocker status before working on template parsing
+4. Update this file if changing architecture or status
+5. Add `AI: Claude Code` to all commits
 
-### Working on v2 (Go)
-1. v2 is active development - new features welcome
-2. Follow hexagonal architecture (ports & adapters)
-3. Port logic from v1 when possible
-4. Write tests for all new code
-5. Use `internal/` for non-exported packages
-6. Use `pkg/` for exported packages
-7. Document all public APIs
-
-### Working on Frontends
-1. Use shared packages (`packages/client`, `packages/core`)
-2. Follow monorepo conventions (Turborepo)
-3. Test across platforms (web + mobile if applicable)
-4. Keep platform-specific code minimal
-
-### Migration Strategy
-1. v1 and v2 coexist during development
-2. Don't break v1 while building v2
-3. v1 can be deprecated once v2 reaches stable (v2.0.0)
-4. See `.work/MIGRATION_PLAN_V2.md` for detailed plan
+**Debugging**:
+- Wizard logs: `./bin/aws-bootstrap create --interactive 2>&1 | tee /tmp/wizard.log`
+- Clear caches: `rm -rf ~/.aws-bootstrap/{template,pricing}-cache/`
+- Check session notes: `.work/SESSION_2025-10-23_CLI_TUI_PROGRESS.md`
 
 ---
 
-## Testing Strategy
-
-### v1 (Bash)
-- **Config tests**: 24 tests for configuration system
-- **Adapter tests**: 30 tests for mock adapters
-- **No AWS/GitHub required**: Tests use mocks
-- **Fast**: All tests run in <2 seconds
-
-### v2 (Go) - Planned
-- **Unit tests**: Test domain logic with mocks
-- **Integration tests**: Test adapters with real AWS/GitHub (optional)
-- **E2E tests**: Test full workflows
-- **Target**: >80% coverage
-
-### Frontends - Planned
-- **Unit tests**: Test components and hooks
-- **Integration tests**: Test API integration
-- **E2E tests**: Test user workflows (Playwright)
-
----
-
-## Cost Estimation
-
-Typical monthly costs for small projects:
-
-| Environment | Services | Est. Cost |
-|-------------|----------|-----------|
-| Dev | S3, CloudFormation, CloudWatch | $10-15 |
-| Staging | S3, CloudFormation, CloudWatch | $10-15 |
-| Prod | S3, CloudFormation, CloudWatch + app | $20-50 |
-| **Total** | | **$40-80** |
-
-*Add compute costs (Lambda, ECS, EC2) based on your application needs*
-
----
-
-## Roadmap
-
-See main [README.md](./README.md) for detailed roadmap.
-
-**Summary**:
-- v1: Maintenance mode
-- v2 Alpha: Foundation (current)
-- v2 Beta: Enhanced UX with TUI and web (Q1 2026)
-- v2 Stable: Multi-platform apps (Q2-Q3 2026)
-
----
-
-Last updated: 2025-10-22 (Roadmap updated - focusing on CLI/TUI, no API server)
+Last updated: 2025-10-25
 
 AI: Claude Code
