@@ -1,8 +1,8 @@
 # AWS Multi-Account Bootstrap v2 (Go)
 
-> **Status**: Active Development (v2.0.0-alpha)
+> **Status**: Active Development (v2.0.0-alpha, ~80% complete)
 >
-> This is the v2 implementation built with Go. It provides strong typing, better performance, and foundation for multi-platform frontends (web, mobile, desktop).
+> Go implementation with strong typing, better testing, single binary distribution, and beautiful TUI wizard.
 
 ## Quick Start
 
@@ -20,42 +20,50 @@ make build
 ./bin/aws-bootstrap --help
 ```
 
+## Current Status
+
+**Completed** ✅:
+- AWS adapter (Organizations, IAM, STS, Budgets, CloudWatch, SNS, CDK)
+- GitHub adapter (repos, branches, secrets, environments, workflows, OIDC)
+- Template loader (66+ cloudonaut/widdix CloudFormation templates)
+- Prerequisites checker (AWS CLI, GitHub CLI, CDK CLI)
+- CLI with Bubbletea TUI (~80% complete)
+
+**In Progress** 🚧:
+- 7-step interactive wizard (Category → Template → Profile → Cost → Bootstrap → Prerequisites → Config → Review → Execute)
+- Async operations with progress indicators
+
+**Blocked** 🔴:
+- Template analyzer hangs on CloudFormation YAML parsing (currently falling back to bootstrap-only cost estimates)
+
 ## Architecture
 
-This implementation uses **Hexagonal Architecture (Ports & Adapters)** with an honest, AWS-specific design:
+**Pattern**: Domain (pure) → Ports (interfaces) → Adapters (AWS SDK, GitHub API, mocks)
+
+**Why**: Testing without AWS credentials (not for multi-cloud abstraction)
 
 ```
 go/
-├── cmd/
-│   └── aws-bootstrap/     # CLI entry point
+├── cmd/aws-bootstrap/     # CLI with Cobra + Bubbletea TUI
 ├── internal/
-│   ├── ports/             # Interfaces (AWS-specific)
-│   │   └── aws.go         # AWSClient interface
-│   ├── domain/            # Business logic (pure Go)
-│   │   └── account/       # Account management domain
-│   └── adapters/          # Implementations
-│       ├── aws/           # Real AWS SDK adapter (TODO)
-│       └── mock/          # Test doubles
-└── pkg/                   # Public libraries
+│   ├── domain/            # Pure business logic
+│   │   ├── account/       # Account naming, orchestration
+│   │   ├── templates/     # Template analysis (🔴 BLOCKER)
+│   │   └── cost/          # Cost estimation
+│   ├── ports/             # Interfaces
+│   │   ├── aws.go, github.go
+│   │   ├── template_loader.go
+│   │   └── prerequisite_checker.go
+│   ├── adapters/          # Implementations
+│   │   ├── aws/           # ✅ AWS SDK v2
+│   │   ├── github/        # ✅ go-github
+│   │   ├── templates/     # ✅ GitHub API + filesystem
+│   │   ├── system/        # ✅ Prerequisites
+│   │   └── mock/          # For testing
+│   └── cli/tui/           # 🚧 Bubbletea wizard
 ```
 
-### Key Design Decisions
-
-**AWS-Specific Interface**
-- This tool is designed for AWS, not generic cloud
-- The `AWSClient` interface is deliberately AWS-specific
-- Operations like `BootstrapCDK`, `CreateOIDCProviderForGitHub`, `CreateBudget` are AWS-only
-- Other clouds (Azure, GCP) have fundamentally different multi-account patterns
-
-**Why Hexagonal Architecture?**
-- **Testing**: Mock adapters enable fast tests (<100ms) without AWS credentials
-- **Separation**: Business logic stays separate from AWS SDK details
-- **Clarity**: Makes dependencies explicit
-
-**Not for Multi-Cloud**
-- We're honest: This is AWS-only
-- Azure and GCP need separate tools
-- False cloud abstractions create complexity without value
+**Key Insight**: AWS-specific design. This tool is for AWS only. Azure/GCP need separate tools.
 
 ## Testing
 
@@ -108,40 +116,60 @@ make build
 4. Write tests using mock
 5. Implement real adapter in `internal/adapters/aws/`
 
-## Roadmap
+## Next Steps
 
-- [ ] Implement real AWS adapter (AWS SDK v2)
-- [ ] Implement GitHub adapter
-- [ ] Build CLI application structure
-- [ ] Add billing/budget domain logic
-- [ ] Create configuration system
-- [ ] Build web frontend
-- [ ] Build mobile app (React Native)
+**Immediate**:
+- [ ] Fix template analyzer hang (add timeout + debug logging to `internal/domain/templates/analyzer.go`)
+- [ ] Complete wizard execution step (create AWS accounts, GitHub repo)
+- [ ] Add progress tracking during execution
 
-## Migration from v1
+**Near-term**:
+- [ ] Save configuration to file after completion
+- [ ] Add integration tests with real AWS/GitHub
+- [ ] Single binary distribution
+- [ ] Homebrew formula
+- [ ] Shell completions (bash, zsh, fish)
 
-See [Migration Guide](../docs/migration/BASH_TO_GO.md) for details on migrating from bash v1 to Go v2.
+**Future**:
+- [ ] Template marketplace/gallery
+- [ ] Cost optimization recommendations
+- [ ] Multi-region support
 
-## Testing Philosophy
+## Testing
 
-**Unit Tests**
-- Use mock adapters
-- Test business logic in isolation
-- Fast (<1ms per test)
-- No external dependencies
+**Unit Tests** (<100ms, no AWS credentials):
+```bash
+make test        # All tests with race detection
+make test-verbose
+make test-coverage
+```
 
-**Integration Tests** (TODO)
-- Use AWS LocalStack or similar
-- Test real AWS SDK integration
-- Slower but verify actual AWS behavior
+**Integration Tests** (optional, requires AWS/GitHub):
+```bash
+# Not yet implemented
+# Will test real AWS SDK and GitHub API integration
+```
+
+## Debugging
+
+```bash
+# Run wizard with debug output
+./bin/aws-bootstrap create --interactive 2>&1 | tee /tmp/wizard.log
+
+# Clear caches if needed
+rm -rf ~/.aws-bootstrap/template-cache/
+rm -rf ~/.aws-bootstrap/pricing-cache/
+```
 
 ## Documentation
 
+- [Main README](../README.md) - Monorepo overview
+- [CLAUDE.md](../CLAUDE.md) - AI assistant context (read this first!)
 - [Hexagonal Architecture](../docs/architecture/HEXAGONAL_ARCHITECTURE.md)
-- [AWS Client Interface](./internal/ports/aws.go)
-- [Domain Logic](./internal/domain/account/)
-- [Mock Adapters](./internal/adapters/mock/)
+- [Migration Guide](../docs/migration/BASH_TO_GO.md)
+- [AWS Adapter](./internal/adapters/aws/README.md)
+- [GitHub Adapter](./internal/adapters/github/README.md)
 
 ## License
 
-Apache 2.0 - See [LICENSE](../LICENSE) for details
+Apache 2.0 - See [LICENSE](../LICENSE)
