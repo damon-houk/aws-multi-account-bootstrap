@@ -1,52 +1,56 @@
 # Migration Guide: Bash v1 to Go v2
 
-This guide helps you migrate from the bash v1 implementation to the Go v2 implementation.
+> Guide for migrating from bash v1 to Go v2.
 
-## Status
+## Current Status (2025-10-25)
 
-**v1 (bash)**: Maintenance mode - Stable, production-ready, no new features
-**v2 (Go)**: Active development - Not yet feature-complete
+**v1 (bash)**: ✅ Stable, production-ready, maintenance mode only
+**v2 (Go)**: 🚧 ~80% complete, active development, not yet stable
 
-## When to Migrate
+## When to Use Which Version
 
-### Stick with v1 if:
-- ✅ You have existing v1 deployments
-- ✅ You need stability
-- ✅ The bash scripts meet your needs
-- ✅ You want to avoid churn
+**Use v1 if**:
+- You need stability NOW
+- You have existing v1 deployments
+- You want to avoid bleeding edge
 
-### Consider v2 if:
-- 🚧 You want strong typing
-- 🚧 You want better error messages
-- 🚧 You want multi-platform frontends (web/mobile/desktop)
-- 🚧 You want to contribute to v2 development
+**Use v2 if**:
+- You want beautiful TUI wizard
+- You want single binary distribution
+- You want to contribute to development
+- You can tolerate some rough edges
 
-**Current recommendation:** Stick with v1 until v2 reaches feature parity.
+**Recommendation**: v1 for production, v2 for testing/contributions
 
-## Feature Comparison
+## Feature Comparison (2025-10-25)
 
 | Feature | v1 (Bash) | v2 (Go) |
 |---------|-----------|---------|
-| Account Creation | ✅ Yes | 🚧 In Progress |
-| AWS Organizations | ✅ Yes | 🚧 In Progress |
-| GitHub CI/CD | ✅ Yes | ❌ Not Yet |
-| CDK Bootstrap | ✅ Yes | ❌ Not Yet |
-| Billing Alerts | ✅ Yes | ❌ Not Yet |
-| Configuration System | ✅ Yes (YAML/JSON/env) | ❌ Not Yet |
-| Interactive Mode | ✅ Yes | ❌ Not Yet |
-| Dry Run Mode | ✅ Yes | ❌ Not Yet |
-| Template Browser | ✅ Yes | ❌ Not Yet |
-| Web UI | ❌ No | 🎯 Planned |
-| Mobile App | ❌ No | 🎯 Planned |
-| Type Safety | ❌ No | ✅ Yes |
-| Fast Tests | ⚠️ Moderate | ✅ <100ms |
+| **Infrastructure** |||
+| AWS Organizations | ✅ | ✅ Complete |
+| AWS IAM / OIDC | ✅ | ✅ Complete |
+| AWS Budgets | ✅ | ✅ Complete |
+| CloudWatch Alarms | ✅ | ✅ Complete |
+| CDK Bootstrap | ✅ | ✅ Complete |
+| **GitHub** |||
+| Repository Setup | ✅ | ✅ Complete |
+| Branch Protection | ✅ | ✅ Complete |
+| Secrets/Variables | ✅ | ✅ Complete |
+| Environments | ✅ | ✅ Complete |
+| Workflows | ✅ | ✅ Complete |
+| **CLI/UX** |||
+| Interactive TUI | ❌ Simple | ✅ Bubbletea wizard |
+| Template Browser | ❌ No | ✅ 66+ templates |
+| Prerequisites Check | ✅ | ✅ Complete |
+| Configuration (Viper) | ⚠️ Custom | 🚧 In Progress |
+| Cost Estimation | ⚠️ Static | 🔴 Partial (blocker) |
+| Execution Step | ✅ | 🚧 In Progress |
+| **Quality** |||
+| Type Safety | ❌ | ✅ |
+| Fast Tests | ⚠️ <2s | ✅ <100ms |
+| Single Binary | ❌ | 🚧 Almost |
 
-Legend:
-- ✅ Implemented
-- 🚧 In Progress
-- 🎯 Planned
-- ❌ Not Available
-- ⚠️ Limited
+Legend: ✅ Complete | 🚧 In Progress | 🔴 Blocked | ❌ Not Available | ⚠️ Limited
 
 ## Architecture Differences
 
@@ -272,69 +276,41 @@ Both versions can coexist in the monorepo.
 - Architecture improvements
 - Multi-platform frontends
 
-## Timeline
+## v2 Progress (2025-10-25)
 
-**Current Status (2025-10)**
-- ✅ Monorepo structure
-- ✅ Go foundation with hexagonal architecture
-- ✅ Domain logic (naming, orchestration)
-- ✅ Mock adapters for testing
-- 🚧 Real AWS adapter
-- 🚧 GitHub adapter
-- 🚧 CLI application
+**Completed** ✅:
+- Hexagonal architecture (ports/adapters)
+- AWS adapter (Organizations, IAM, STS, Budgets, CloudWatch, SNS, CDK)
+- GitHub adapter (repos, branches, secrets, environments, workflows, OIDC)
+- Template loader (66+ cloudonaut/widdix templates)
+- Prerequisites checker
+- Bubbletea TUI wizard (~80%)
 
-**Next Milestones**
-1. **v2.0.0-beta** - Feature parity with v1
-2. **v2.0.0** - Stable release
-3. **v2.1.0** - Web UI
-4. **v2.2.0** - Mobile app
+**Remaining**:
+- Fix template parser hang (🔴 BLOCKER)
+- Complete execution step
+- Integration tests
+- Single binary release
+
+**Next Release**: v2.0.0-alpha (when blocker fixed)
 
 ## FAQ
 
-### Can I use both v1 and v2?
+**Can both versions coexist?**
+Yes. v1 in `bash/`, v2 in `go/`. Both work on same AWS resources.
 
-Yes! The monorepo structure allows both to coexist. v1 is in `bash/`, v2 is in `go/`.
+**Will v1 be removed?**
+No. v1 stays in maintenance indefinitely.
 
-### When will v2 be stable?
+**When is v2 stable?**
+When template parser blocker is fixed and execution step completes.
 
-Target: Q1 2026 for v2.0.0 stable release.
-
-### Will v1 be removed?
-
-No immediate plans. v1 will stay in maintenance mode indefinitely.
-
-### How do I know which version I'm using?
-
-```bash
-# v1
-bash/scripts/setup-complete-project.sh --version
-
-# v2
-aws-bootstrap version
-```
-
-### Can I migrate incrementally?
-
-Yes! You can use v1 for some operations and v2 for others. They operate on the same AWS resources.
-
-### What if I find a bug in v2?
-
-Report it: https://github.com/damon-houk/aws-multi-account-bootstrap/issues
-
-Include:
-- Version (v1 or v2)
-- Steps to reproduce
-- Expected vs actual behavior
-
-## Getting Help
-
-- **Documentation**: See [go/README.md](../../go/README.md)
-- **Issues**: https://github.com/damon-houk/aws-multi-account-bootstrap/issues
-- **Discussions**: https://github.com/damon-houk/aws-multi-account-bootstrap/discussions
+**Found a bug?**
+Report: https://github.com/damon-houk/aws-multi-account-bootstrap/issues
 
 ## See Also
 
+- [CLAUDE.md](../../CLAUDE.md) - AI assistant context (read this first!)
+- [Go v2 README](../../go/README.md) - v2 status and commands
 - [Hexagonal Architecture](../architecture/HEXAGONAL_ARCHITECTURE.md)
-- [Go v2 README](../../go/README.md)
 - [Bash v1 README](../../bash/README.md)
-- [Root README](../../README.md)
